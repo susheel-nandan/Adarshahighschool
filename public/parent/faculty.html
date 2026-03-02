@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Faculty Directory — Parent Portal</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <style>
+        .faculty-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .fcard {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform .2s, box-shadow .2s;
+        }
+
+        .fcard:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, .25);
+        }
+
+        .fcard::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--teal), var(--primary));
+        }
+
+        .fcard.class-teacher::before {
+            background: linear-gradient(90deg, #f59e0b, #ef4444);
+        }
+
+        .ct-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: #fff;
+            font-size: .65rem;
+            font-weight: 700;
+            padding: .2rem .55rem;
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, .4);
+        }
+
+        .fcard-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--teal), var(--primary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #fff;
+            margin: 0 auto 1rem;
+        }
+
+        .fcard.class-teacher .fcard-avatar {
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+        }
+
+        .fcard-name {
+            font-size: 1.05rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: .2rem;
+        }
+
+        .fcard-subject-wrap {
+            text-align: center;
+        }
+
+        .fcard-subject {
+            text-align: center;
+            font-size: .8rem;
+            font-weight: 600;
+            color: var(--teal);
+            background: rgba(20, 184, 166, .12);
+            border-radius: 20px;
+            padding: .2rem .7rem;
+            display: inline-block;
+            margin: 0 auto .85rem;
+            width: fit-content;
+        }
+
+        .fcard-info {
+            display: flex;
+            flex-direction: column;
+            gap: .45rem;
+            margin: .75rem 0;
+        }
+
+        .fcard-row {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            font-size: .82rem;
+            color: var(--text-secondary);
+        }
+
+        .fcard-row span:first-child {
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .fcard-actions {
+            display: flex;
+            gap: .5rem;
+            margin-top: 1rem;
+        }
+
+        .fcard-actions a {
+            flex: 1;
+        }
+
+        .fcard-actions button {
+            width: 100%;
+        }
+
+        .section-label {
+            font-size: .7rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin: 1rem 0 .75rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+
+                <!-- Class info bar -->
+                <div id="class-info"
+                    style="display:none;background:rgba(20,184,166,.08);border:1px solid rgba(20,184,166,.2);border-radius:10px;padding:.6rem 1rem;font-size:.84rem;margin-bottom:1rem">
+                    👦 Showing faculty for <strong id="class-label"></strong>
+                </div>
+
+                <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-bottom:1.25rem">
+                    <input class="form-control" id="search" type="text" placeholder="🔍 Search by name or subject..."
+                        oninput="render()" style="max-width:320px" />
+                    <div id="faculty-count" style="font-size:.82rem;color:var(--text-muted);margin-left:auto"></div>
+                </div>
+
+                <div id="ct-section" style="display:none">
+                    <div class="section-label">⭐ Class Teacher</div>
+                    <div class="faculty-grid" id="ct-grid"></div>
+                </div>
+
+                <div class="section-label" id="all-label">📚 Subject Teachers</div>
+                <div class="faculty-grid" id="faculty-grid"></div>
+
+                <div id="empty-msg" class="card" style="display:none;text-align:center;padding:3rem">
+                    <div style="font-size:2.5rem;margin-bottom:.75rem">👩‍🏫</div>
+                    <div style="font-weight:700;margin-bottom:.35rem">No Faculty Assigned</div>
+                    <div style="color:var(--text-muted);font-size:.85rem">No faculty have been assigned to your child's
+                        class yet. Contact the school admin.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/parent-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildParentSidebar('faculty');
+        document.getElementById('topbar-container').innerHTML = buildParentTopBar('Faculty Directory');
+
+        let allFaculty = [];
+
+        function facultyCard(f, highlight) {
+            const initials = f.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+            const waLink = `https://wa.me/91${(f.mobile || '').replace(/\D/g, '')}`;
+            return `<div class="fcard${highlight ? ' class-teacher' : ''}">
+      ${highlight ? '<span class="ct-badge">⭐ Class Teacher</span>' : ''}
+      <div class="fcard-avatar">${initials}</div>
+      <div class="fcard-name">${f.name}</div>
+      <div class="fcard-subject-wrap"><span class="fcard-subject">${f.subject}</span></div>
+      <div class="fcard-info">
+        <div class="fcard-row"><span>🎓</span><span>${f.qualification || 'M.Sc, B.Ed'}</span></div>
+        <div class="fcard-row"><span>⏳</span><span>${f.experience} yr${f.experience !== 1 ? 's' : ''} experience</span></div>
+        <div class="fcard-row"><span>📞</span><span>${f.mobile}</span></div>
+        ${f.email ? `<div class="fcard-row"><span>📧</span><span style="word-break:break-all">${f.email}</span></div>` : ''}
+      </div>
+      <div class="fcard-actions">
+        <a href="tel:${f.mobile}"><button class="btn btn-secondary btn-sm">📞 Call</button></a>
+        <a href="${waLink}" target="_blank"><button class="btn btn-success btn-sm">💬 WhatsApp</button></a>
+        ${f.email ? `<a href="mailto:${f.email}"><button class="btn btn-primary btn-sm">✉️ Email</button></a>` : ''}
+      </div>
+    </div>`;
+        }
+
+        function render() {
+            const q = document.getElementById('search').value.toLowerCase();
+            const filtered = q ? allFaculty.filter(f => f.name.toLowerCase().includes(q) || f.subject.toLowerCase().includes(q)) : allFaculty;
+            document.getElementById('faculty-count').textContent = `${filtered.length} of ${allFaculty.length} faculty`;
+
+            const ct = filtered.filter(f => f.is_class_teacher);
+            const others = filtered.filter(f => !f.is_class_teacher);
+
+            const ctSec = document.getElementById('ct-section');
+            if (ct.length && !q) {
+                ctSec.style.display = ''; document.getElementById('ct-grid').innerHTML = ct.map(f => facultyCard(f, true)).join('');
+            } else { ctSec.style.display = 'none'; }
+
+            const toShow = !q ? others : filtered;
+            document.getElementById('all-label').style.display = !q && ct.length ? '' : 'none';
+            document.getElementById('faculty-grid').innerHTML = toShow.map(f => facultyCard(f, f.is_class_teacher && !!q)).join('');
+            document.getElementById('empty-msg').style.display = allFaculty.length === 0 ? '' : 'none';
+        }
+
+        (async () => {
+            const data = await initParentPage();
+            // Show child's class info
+            if (data?.student) {
+                const ci = document.getElementById('class-info');
+                ci.style.display = '';
+                document.getElementById('class-label').textContent =
+                    `Class ${data.student.class}${data.student.section} — ${data.student.name}`;
+            }
+            allFaculty = await api('GET', '/api/parent/faculty').catch(() => []);
+            render();
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>My Profile — Parent Portal</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start">
+                    <!-- Parent Profile -->
+                    <div class="card">
+                        <div style="text-align:center;margin-bottom:1.5rem">
+                            <div id="p-avatar"
+                                style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--primary));display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:700;margin:0 auto .75rem;box-shadow:0 4px 20px rgba(245,158,11,.3)">
+                                ?</div>
+                            <div id="p-name" style="font-family:'Outfit';font-size:1.2rem;font-weight:700"></div>
+                            <div style="color:var(--accent-light);font-size:.82rem;font-weight:600">Parent / Guardian
+                            </div>
+                        </div>
+                        <div class="info-list" id="parent-info"></div>
+                    </div>
+
+                    <!-- Student Info (read-only) + Edit Mobile + Change Password -->
+                    <div style="display:flex;flex-direction:column;gap:1.25rem">
+                        <div class="card">
+                            <h3 class="card-title" style="margin-bottom:1rem">🎒 Linked Student</h3>
+                            <div class="info-list" id="student-info"></div>
+                        </div>
+
+                        <div class="card">
+                            <h3 class="card-title" style="margin-bottom:.75rem">📞 Update Mobile Number</h3>
+                            <p style="font-size:.8rem;color:var(--text-secondary);margin-bottom:1rem">Requires OTP
+                                verification to save changes.</p>
+                            <div id="mobile-step-1">
+                                <div class="form-group">
+                                    <label class="form-label">New Mobile Number</label>
+                                    <input class="form-control" id="new-mobile" type="tel"
+                                        placeholder="10-digit number" />
+                                </div>
+                                <button class="btn btn-primary w-full" onclick="requestMobileOtp()">Send OTP</button>
+                            </div>
+                            <div id="mobile-step-2" class="hidden">
+                                <div class="form-group">
+                                    <label class="form-label">Enter OTP (Demo: 123456)</label>
+                                    <input class="form-control" id="mobile-otp" type="text" placeholder="6-digit OTP"
+                                        maxlength="6" />
+                                </div>
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+                                    <button class="btn btn-secondary" onclick="resetMobileStep()">← Back</button>
+                                    <button class="btn btn-success" onclick="updateMobile()">Update Mobile</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h3 class="card-title" style="margin-bottom:1rem">🔑 Change Password</h3>
+                            <form id="pwd-form">
+                                <div class="form-group"><label class="form-label">Current Password</label><input
+                                        class="form-control" id="old-pwd" type="password" required /></div>
+                                <div class="form-group"><label class="form-label">New Password</label><input
+                                        class="form-control" id="new-pwd" type="password" required /></div>
+                                <div class="form-group"><label class="form-label">Confirm Password</label><input
+                                        class="form-control" id="confirm-pwd" type="password" required /></div>
+                                <button type="submit" class="btn btn-primary w-full">Update Password</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/parent-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildParentSidebar('profile');
+        document.getElementById('topbar-container').innerHTML = buildParentTopBar('My Profile');
+
+        let parentId = null;
+
+        async function requestMobileOtp() {
+            const mobile = document.getElementById('new-mobile').value.trim();
+            if (!mobile || mobile.length < 10) { showToast('Enter a valid mobile number', 'error'); return; }
+            try {
+                const res = await api('POST', '/api/auth/request-otp', { identifier: parentId, role: 'parent' });
+                showToast(res.message, 'success');
+                document.getElementById('mobile-step-1').classList.add('hidden');
+                document.getElementById('mobile-step-2').classList.remove('hidden');
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        function resetMobileStep() {
+            document.getElementById('mobile-step-1').classList.remove('hidden');
+            document.getElementById('mobile-step-2').classList.add('hidden');
+        }
+
+        async function updateMobile() {
+            const otp = document.getElementById('mobile-otp').value.trim();
+            const mobile = document.getElementById('new-mobile').value.trim();
+            try {
+                const res = await api('PUT', '/api/parent/update-mobile', { mobile, otp });
+                showToast(res.message, 'success');
+                resetMobileStep();
+                document.getElementById('new-mobile').value = '';
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        document.getElementById('pwd-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newP = document.getElementById('new-pwd').value;
+            if (newP !== document.getElementById('confirm-pwd').value) { showToast('Passwords do not match', 'error'); return; }
+            try {
+                const res = await api('POST', '/api/auth/change-password', { old_password: document.getElementById('old-pwd').value, new_password: newP });
+                showToast(res.message, 'success');
+                e.target.reset();
+            } catch (e) { showToast(e.message, 'error'); }
+        });
+
+        (async () => {
+            const data = await initParentPage();
+            if (!data) return;
+            const { parent, student } = data;
+            parentId = parent.parent_id;
+
+            document.getElementById('p-avatar').textContent = (parent.name || 'P')[0];
+            document.getElementById('p-name').textContent = parent.name;
+
+            document.getElementById('parent-info').innerHTML = [
+                { k: '🆔 Parent ID', v: parent.parent_id },
+                { k: '📞 Mobile', v: parent.mobile },
+                { k: '📧 Email', v: parent.email || '—' },
+            ].map(i => `<div class="info-item"><span class="info-key">${i.k}</span><span class="info-val">${i.v}</span></div>`).join('');
+
+            document.getElementById('student-info').innerHTML = student ? [
+                { k: '👤 Name', v: student.name },
+                { k: '🆔 Student ID', v: student.student_id },
+                { k: '🎂 Date of Birth', v: fmtDate(student.dob) },
+                { k: '📚 Class', v: `Class ${student.class} – Section ${student.section}` },
+            ].map(i => `<div class="info-item"><span class="info-key">${i.k}</span><span class="info-val">${i.v}</span></div>`).join('')
+                : '<p style="color:var(--text-muted);font-size:.85rem">No student linked to this account.</p>';
+
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>

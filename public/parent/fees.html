@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Fee Management — Parent Portal</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+                <div class="fee-summary-cards" id="fee-summary"></div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">💰 Fee History</h3>
+                        <select class="form-control" id="fee-filter"
+                            style="width:auto;padding:.35rem .75rem;font-size:.8rem" onchange="filterFees()">
+                            <option value="ALL">All</option>
+                            <option value="Paid">Paid</option>
+                            <option value="Pending">Pending</option>
+                        </select>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Due Date</th>
+                                    <th>Paid Date</th>
+                                    <th>Receipt</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fees-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div class="modal-overlay" id="pay-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 style="font-size:1rem;font-weight:700">💳 Confirm Payment</h3>
+                <button class="modal-close" onclick="closePayModal()">✕</button>
+            </div>
+            <div id="pay-details" style="margin-bottom:1.5rem"></div>
+            <div
+                style="background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.2);border-radius:8px;padding:.75rem;font-size:.8rem;color:var(--primary-light);margin-bottom:1rem">
+                🔒 Demo Payment Gateway — No real transaction will occur.
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+                <button class="btn btn-secondary" onclick="closePayModal()">Cancel</button>
+                <button class="btn btn-success" id="confirm-pay-btn" onclick="confirmPayment()">✅ Pay Now</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/parent-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildParentSidebar('fees');
+        document.getElementById('topbar-container').innerHTML = buildParentTopBar('Fee Management');
+
+        let allFees = [];
+        let pendingFeeId = null;
+
+        function filterFees() {
+            const f = document.getElementById('fee-filter').value;
+            const rows = f === 'ALL' ? allFees : allFees.filter(fee => fee.status === f);
+            renderFeesTable(rows);
+        }
+
+        function renderFeesTable(rows) {
+            document.getElementById('fees-tbody').innerHTML = rows.map(f => {
+                const badge = f.status === 'Paid' ? 'badge-success' : 'badge-danger';
+                return `<tr>
+        <td>${f.description}</td>
+        <td style="font-weight:600">${fmtCurrency(f.amount)}</td>
+        <td>${fmtDate(f.due_date)}</td>
+        <td>${f.paid_date ? fmtDate(f.paid_date) : '—'}</td>
+        <td style="font-size:.78rem">${f.receipt_no || '—'}</td>
+        <td><span class="badge ${badge}">${f.status}</span></td>
+        <td>${f.status !== 'Paid' ? `<button class="btn btn-danger btn-sm" onclick="openPayModal(${f.id},'${f.description}',${f.amount})">Pay</button>` : '—'}</td>
+      </tr>`;
+            }).join('') || '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">No records found.</td></tr>';
+        }
+
+        function openPayModal(id, desc, amount) {
+            pendingFeeId = id;
+            document.getElementById('pay-details').innerHTML = `
+      <div class="info-list">
+        <div class="info-item"><span class="info-key">Description</span><span class="info-val">${desc}</span></div>
+        <div class="info-item"><span class="info-key">Amount</span><span class="info-val grade-D" style="font-size:1.2rem">${fmtCurrency(amount)}</span></div>
+      </div>`;
+            document.getElementById('pay-modal').classList.add('open');
+        }
+
+        function closePayModal() {
+            document.getElementById('pay-modal').classList.remove('open');
+            pendingFeeId = null;
+        }
+
+        async function confirmPayment() {
+            if (!pendingFeeId) return;
+            const btn = document.getElementById('confirm-pay-btn');
+            btn.textContent = 'Processing...'; btn.disabled = true;
+            try {
+                const res = await api('POST', '/api/parent/fee-pay', { fee_id: pendingFeeId });
+                showToast(`Payment successful! Receipt: ${res.receipt_no}`, 'success');
+                closePayModal();
+                await loadFees();
+            } catch (e) { showToast(e.message, 'error'); }
+            btn.textContent = '✅ Pay Now'; btn.disabled = false;
+        }
+
+        async function loadFees() {
+            const data = await api('GET', '/api/parent/fees');
+            allFees = data.fees;
+            document.getElementById('fee-summary').innerHTML = `
+      <div class="fee-summary-card">
+        <div class="fee-amount grade-A">${fmtCurrency(data.summary.paid)}</div>
+        <div class="fee-label">Total Paid</div>
+      </div>
+      <div class="fee-summary-card">
+        <div class="fee-amount grade-D">${fmtCurrency(data.summary.pending)}</div>
+        <div class="fee-label">Total Pending</div>
+      </div>
+      <div class="fee-summary-card">
+        <div class="fee-amount">${fmtCurrency(data.summary.total)}</div>
+        <div class="fee-label">Total Fees</div>
+      </div>
+    `;
+            filterFees();
+        }
+
+        (async () => {
+            await initParentPage();
+            await loadFees();
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>

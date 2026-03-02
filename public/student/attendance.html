@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Attendance — Student Portal</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+                <!-- Summary Cards -->
+                <div class="stat-grid" id="att-stats"></div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+                    <!-- Donut -->
+                    <div class="card"
+                        style="display:flex;align-items:center;justify-content:center;gap:2rem;flex-wrap:wrap">
+                        <svg width="140" height="140" viewBox="0 0 140 140" id="att-donut">
+                            <circle cx="70" cy="70" r="58" fill="none" stroke="rgba(255,255,255,.06)"
+                                stroke-width="16" />
+                            <circle cx="70" cy="70" r="58" fill="none" stroke="var(--success)" stroke-width="16"
+                                id="donut-circle" stroke-dasharray="0 364.425" stroke-linecap="round"
+                                transform="rotate(-90 70 70)" />
+                            <text x="70" y="75" text-anchor="middle" fill="var(--text-primary)" font-size="20"
+                                font-weight="700" font-family="Outfit" id="donut-pct">0%</text>
+                        </svg>
+                        <div id="att-legend" style="display:flex;flex-direction:column;gap:.6rem"></div>
+                    </div>
+
+                    <!-- Monthly Heatmap -->
+                    <div class="card">
+                        <h3 class="card-title" style="margin-bottom:.75rem">📅 Last 30 Days</h3>
+                        <div id="heatmap" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+                        <div style="display:flex;gap:1rem;margin-top:.75rem;font-size:.75rem;color:var(--text-muted)">
+                            <span style="display:flex;gap:.35rem;align-items:center"><span class="att-dot present"
+                                    style="width:10px;height:10px"></span>Present</span>
+                            <span style="display:flex;gap:.35rem;align-items:center"><span class="att-dot absent"
+                                    style="width:10px;height:10px"></span>Absent</span>
+                            <span style="display:flex;gap:.35rem;align-items:center"><span class="att-dot leave"
+                                    style="width:10px;height:10px"></span>Leave</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Log -->
+                <div class="card" style="margin-top:1.25rem">
+                    <div class="card-header">
+                        <h3 class="card-title">📋 Attendance Log</h3>
+                        <select class="form-control" id="filter-status"
+                            style="width:auto;padding:.35rem .75rem;font-size:.8rem" onchange="filterLog()">
+                            <option value="ALL">All</option>
+                            <option value="P">Present</option>
+                            <option value="A">Absent</option>
+                            <option value="L">Leave</option>
+                        </select>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Day</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="att-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/student-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildStudentSidebar('attendance');
+        document.getElementById('topbar-container').innerHTML = buildStudentTopBar('Attendance');
+
+        let allRecords = [];
+
+        function filterLog() {
+            const f = document.getElementById('filter-status').value;
+            const rows = f === 'ALL' ? allRecords : allRecords.filter(r => r.status === f);
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            document.getElementById('att-tbody').innerHTML = rows.slice(0, 60).map(r => {
+                const d = new Date(r.date);
+                const lbl = { P: 'Present', A: 'Absent', L: 'Leave' }[r.status];
+                const badge = r.status === 'P' ? 'badge-success' : r.status === 'A' ? 'badge-danger' : 'badge-warning';
+                return `<tr>
+        <td>${fmtDate(r.date)}</td>
+        <td>${days[d.getDay()]}</td>
+        <td><span class="badge ${badge}">${lbl}</span></td>
+      </tr>`;
+            }).join('');
+        }
+
+        (async () => {
+            await initStudentPage();
+            const data = await api('GET', '/api/student/attendance');
+            const s = data.stats;
+            allRecords = data.records;
+
+            document.getElementById('att-stats').innerHTML = `
+      <div class="stat-card" style="--stat-color:var(--success);--stat-icon-bg:rgba(16,185,129,.15)">
+        <div class="stat-icon">✅</div>
+        <div class="stat-info"><div class="stat-value">${s.percentage}%</div><div class="stat-label">Attendance Rate</div></div>
+      </div>
+      <div class="stat-card" style="--stat-color:var(--primary);--stat-icon-bg:rgba(37,99,235,.15)">
+        <div class="stat-icon">📅</div>
+        <div class="stat-info"><div class="stat-value">${s.present}</div><div class="stat-label">Days Present</div></div>
+      </div>
+      <div class="stat-card" style="--stat-color:var(--danger);--stat-icon-bg:rgba(239,68,68,.15)">
+        <div class="stat-icon">❌</div>
+        <div class="stat-info"><div class="stat-value">${s.absent}</div><div class="stat-label">Days Absent</div></div>
+      </div>
+      <div class="stat-card" style="--stat-color:var(--warning);--stat-icon-bg:rgba(245,158,11,.15)">
+        <div class="stat-icon">🏖️</div>
+        <div class="stat-info"><div class="stat-value">${s.leave}</div><div class="stat-label">Days on Leave</div></div>
+      </div>
+    `;
+
+            // Donut
+            const pctNum = parseFloat(s.percentage);
+            const circum = 364.425;
+            document.getElementById('donut-circle').setAttribute('stroke-dasharray', `${pctNum / 100 * circum} ${circum}`);
+            document.getElementById('donut-pct').textContent = s.percentage + '%';
+
+            document.getElementById('att-legend').innerHTML = `
+      <div style="display:flex;gap:.5rem;align-items:center"><span class="att-dot present"></span><span style="font-size:.82rem">Present: <strong>${s.present}</strong></span></div>
+      <div style="display:flex;gap:.5rem;align-items:center"><span class="att-dot absent"></span><span style="font-size:.82rem">Absent: <strong>${s.absent}</strong></span></div>
+      <div style="display:flex;gap:.5rem;align-items:center"><span class="att-dot leave"></span><span style="font-size:.82rem">Leave: <strong>${s.leave}</strong></span></div>
+      <div style="font-size:.78rem;color:var(--text-muted)">Total: ${s.total} days</div>
+    `;
+
+            // Heatmap (last 30 records)
+            document.getElementById('heatmap').innerHTML = allRecords.slice(0, 30).reverse().map(r => {
+                const cls = { P: 'present', A: 'absent', L: 'leave' }[r.status];
+                return `<div title="${fmtDate(r.date)}: ${r.status}" style="width:18px;height:18px;border-radius:3px;background:${r.status === 'P' ? 'var(--success)' : r.status === 'A' ? 'var(--danger)' : 'var(--warning)'}" class="att-dot ${cls}"></div>`;
+            }).join('');
+
+            filterLog();
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>

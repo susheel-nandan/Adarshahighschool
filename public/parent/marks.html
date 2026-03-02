@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Child's Marks — Parent Portal</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+                <div class="card"
+                    style="margin-bottom:1.25rem;background:linear-gradient(135deg,rgba(37,99,235,.12),rgba(13,148,136,.08));border-color:rgba(37,99,235,.25)">
+                    <div style="display:flex;align-items:center;gap:2rem;flex-wrap:wrap">
+                        <div>
+                            <div style="font-family:'Outfit';font-size:1.8rem;font-weight:800" id="rank-display">—</div>
+                            <div style="color:var(--text-secondary);font-size:.82rem">Class Rank (FA1)</div>
+                        </div>
+                        <div>
+                            <div id="avg-display"
+                                style="font-family:'Outfit';font-size:1.4rem;font-weight:700;color:var(--teal-light)">—
+                            </div>
+                            <div style="font-size:.8rem;color:var(--text-muted)">Overall Average</div>
+                        </div>
+                        <div style="margin-left:auto;font-size:.82rem;color:var(--text-muted)">👁 Read-Only View</div>
+                    </div>
+                </div>
+                <div id="exam-tabs" style="display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap"></div>
+                <div class="card">
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Subject</th>
+                                    <th>Marks</th>
+                                    <th>Percentage</th>
+                                    <th>Grade</th>
+                                    <th>Performance</th>
+                                </tr>
+                            </thead>
+                            <tbody id="marks-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/js/utils.js"></script>
+    <script src="/js/parent-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildParentSidebar('marks');
+        document.getElementById('topbar-container').innerHTML = buildParentTopBar("Child's Marks");
+        let allMarks = [], activeExam = 'FA1';
+
+        function renderMarks() {
+            const filtered = allMarks.filter(m => m.exam_type === activeExam);
+            const avg = filtered.length ? (filtered.reduce((s, m) => s + m.percentage, 0) / filtered.length).toFixed(1) : 0;
+            document.getElementById('avg-display').textContent = avg + '%';
+            document.getElementById('marks-tbody').innerHTML = filtered.map(m => {
+                const g = getGrade(m.percentage);
+                return `<tr><td><strong>${m.subject}</strong></td><td>${m.marks_obtained}/${m.max_marks}</td><td>${m.percentage}%</td>
+      <td><span class="badge ${m.percentage >= 60 ? 'badge-success' : 'badge-danger'}">${g.grade}</span></td>
+      <td style="width:180px"><div style="display:flex;align-items:center;gap:.5rem"><div class="progress-bar" style="flex:1"><div class="progress-fill" style="width:${m.percentage}%"></div></div><span style="font-size:.75rem;color:var(--text-muted)">${m.percentage}%</span></div></td></tr>`;
+            }).join('') || '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted)">No marks recorded.</td></tr>';
+        }
+
+        (async () => {
+            await initParentPage();
+            const data = await api('GET', '/api/parent/student-marks');
+            allMarks = data.marks;
+            document.getElementById('rank-display').textContent = `#${data.rank} of ${data.totalStudents}`;
+            const types = [...new Set(allMarks.map(m => m.exam_type))];
+            document.getElementById('exam-tabs').innerHTML = types.map(t =>
+                `<button class="btn ${t === 'FA1' ? 'btn-primary' : 'btn-secondary'} btn-sm" id="tab-${t}" onclick="switchTab('${t}')">${t}</button>`
+            ).join('');
+            renderMarks();
+            hideLoader();
+        })();
+
+        function switchTab(exam) {
+            activeExam = exam;
+            document.querySelectorAll('#exam-tabs button').forEach(b => b.className = 'btn btn-secondary btn-sm');
+            document.getElementById('tab-' + exam).className = 'btn btn-primary btn-sm';
+            renderMarks();
+        }
+    </script>
+</body>
+
+</html>

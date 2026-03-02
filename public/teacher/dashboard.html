@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Dashboard — Teacher Portal</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+
+                <!-- Profile banner -->
+                <div
+                    style="background:linear-gradient(135deg,#0d9488,#0f766e);border-radius:14px;padding:1.5rem;margin-bottom:1.5rem;position:relative;overflow:hidden">
+                    <div
+                        style="position:absolute;inset:0;opacity:.07;background-image:radial-gradient(circle,#fff 1px,transparent 1px);background-size:20px 20px">
+                    </div>
+                    <div style="position:relative;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+                        <div style="width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.2);border:3px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:800;color:#fff;flex-shrink:0"
+                            id="dash-avatar">T</div>
+                        <div style="color:#fff">
+                            <div style="font-size:1.3rem;font-weight:800" id="dash-name">Loading...</div>
+                            <div style="opacity:.75;font-size:.85rem">📚 Subject: <span id="dash-subject">—</span></div>
+                            <div style="opacity:.75;font-size:.85rem">📞 <span id="dash-mobile">—</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assigned classes -->
+                <div class="card" style="margin-bottom:1.5rem">
+                    <div class="card-header">
+                        <div class="card-title">🏫 My Assigned Classes</div>
+                        <a href="/teacher/marks.html"><button class="btn btn-primary btn-sm">📝 Enter Marks
+                                →</button></a>
+                    </div>
+                    <div id="classes-grid" class="stat-grid"></div>
+                    <div id="no-classes" style="display:none;text-align:center;padding:2rem;color:var(--text-muted)">
+                        No classes assigned yet. Contact admin.
+                    </div>
+                </div>
+
+                <!-- Quick tip -->
+                <div
+                    style="background:rgba(13,148,136,.08);border:1px solid rgba(13,148,136,.2);border-radius:10px;padding:1rem;font-size:.85rem;color:var(--text-secondary)">
+                    💡 <strong style="color:var(--teal-light)">Tip:</strong> Use <strong>Enter Marks</strong> to update
+                    student marks for your subject across all your assigned classes.
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <script src="/js/utils.js"></script>
+    <script src="/js/teacher-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildTeacherSidebar('dashboard');
+        document.getElementById('topbar-container').innerHTML = buildTeacherTopBar('Teacher Dashboard');
+
+        (async () => {
+            const profile = await initTeacherPage();
+            if (!profile) return;
+
+            document.getElementById('dash-name').textContent = profile.name;
+            document.getElementById('dash-subject').textContent = profile.subject;
+            document.getElementById('dash-mobile').textContent = profile.mobile;
+            document.getElementById('dash-avatar').textContent = profile.name[0].toUpperCase();
+
+            const classes = await api('GET', '/api/teacher/classes').catch(() => []);
+            const grid = document.getElementById('classes-grid');
+            if (!classes.length) { document.getElementById('no-classes').style.display = ''; grid.style.display = 'none'; }
+            else {
+                grid.innerHTML = classes.map(c => `
+        <div class="stat-card" style="--stat-color:var(--teal)">
+          <div class="stat-icon" style="background:rgba(13,148,136,.15)">🏫</div>
+          <div class="stat-info">
+            <div class="stat-value">Class ${c.class}${c.section}</div>
+            <div class="stat-label">${c.is_class_teacher ? '⭐ Class Teacher' : profile.subject}</div>
+          </div>
+        </div>`).join('');
+            }
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>

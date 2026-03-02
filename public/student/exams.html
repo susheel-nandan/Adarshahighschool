@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Exam Schedule — Student Portal</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+                <div id="exam-tabs" style="display:flex;gap:.5rem;margin-bottom:1.25rem;flex-wrap:wrap"></div>
+                <div id="exam-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/student-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildStudentSidebar('exams');
+        document.getElementById('topbar-container').innerHTML = buildStudentTopBar('Exam Schedule');
+
+        let allExams = [];
+        let activeType = null;
+
+        function renderExams() {
+            const filtered = activeType ? allExams.filter(e => e.exam_type === activeType) : allExams;
+            if (!filtered.length) {
+                document.getElementById('exam-list').innerHTML = '<div class="card" style="text-align:center;color:var(--text-muted);padding:3rem">No exams scheduled.</div>';
+                return;
+            }
+            document.getElementById('exam-list').innerHTML = filtered.map(e => {
+                const days = countdownDays(e.exam_date);
+                const isPast = new Date(e.exam_date) < new Date('2026-02-28');
+                return `<div class="exam-card ${isPast ? 'opacity-60' : ''}">
+        <div>
+          <div class="exam-subject">${e.subject}</div>
+          <div class="exam-type-label">${e.exam_type} ${isPast ? '• Completed' : ''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:1rem">
+          <div class="exam-date-info">
+            <div class="exam-date">${fmtDate(e.exam_date)}</div>
+            <div class="exam-time">⏰ ${e.start_time} • ${e.duration_mins} mins</div>
+          </div>
+          <span class="countdown-badge" style="${isPast ? 'background:rgba(100,116,139,.15);color:var(--text-muted);border-color:rgba(100,116,139,.3)' : ''}">${days}</span>
+        </div>
+      </div>`;
+            }).join('');
+        }
+
+        (async () => {
+            await initStudentPage();
+            allExams = await api('GET', '/api/student/exams');
+            const types = [...new Set(allExams.map(e => e.exam_type))];
+            activeType = types[0] || null;
+
+            document.getElementById('exam-tabs').innerHTML = [
+                `<button class="btn btn-secondary btn-sm" id="tab-ALL" onclick="switchTab(null)">All</button>`,
+                ...types.map(t => `<button class="btn ${t === activeType ? 'btn-primary' : 'btn-secondary'} btn-sm" id="tab-${t}" onclick="switchTab('${t}')">${t}</button>`)
+            ].join('');
+
+            renderExams();
+            hideLoader();
+        })();
+
+        function switchTab(type) {
+            activeType = type;
+            document.querySelectorAll('#exam-tabs button').forEach(b => b.className = 'btn btn-secondary btn-sm');
+            const id = type ? 'tab-' + type : 'tab-ALL';
+            document.getElementById(id).className = 'btn btn-primary btn-sm';
+            renderExams();
+        }
+    </script>
+</body>
+
+</html>

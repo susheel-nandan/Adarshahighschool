@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Timetable — Admin Panel</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <style>
+        .tt-cell {
+            background: rgba(37, 99, 235, .08);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: .5rem;
+            font-size: .78rem;
+            cursor: pointer;
+            transition: background .2s
+        }
+
+        .tt-cell:hover {
+            background: rgba(37, 99, 235, .18)
+        }
+
+        .tt-cell .subject {
+            font-weight: 700;
+            color: var(--text-primary)
+        }
+
+        .tt-cell .faculty {
+            color: var(--text-muted);
+            font-size: .7rem
+        }
+
+        .tt-empty {
+            color: var(--text-muted);
+            font-size: .74rem;
+            text-align: center;
+            padding: .4rem
+        }
+    </style>
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+                <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem">
+                    <select class="form-control" id="sel-class" style="width:auto" onchange="loadTimetable()">
+                        <option value="8" selected>Class 8</option>
+                        <option value="6">Class 6</option>
+                        <option value="7">Class 7</option>
+                        <option value="9">Class 9</option>
+                        <option value="10">Class 10</option>
+                    </select>
+                    <select class="form-control" id="sel-section" style="width:auto" onchange="loadTimetable()">
+                        <option value="A">Section A</option>
+                        <option value="B">Section B</option>
+                        <option value="C">Section C</option>
+                    </select>
+                    <button class="btn btn-success btn-sm" onclick="openAddSlot()">➕ Add Slot</button>
+                </div>
+
+                <div class="card">
+                    <div class="table-wrapper" style="overflow-x:auto">
+                        <table class="data-table" id="tt-table" style="min-width:800px">
+                            <thead>
+                                <tr>
+                                    <th style="width:80px">Period</th>
+                                    <th>Monday</th>
+                                    <th>Tuesday</th>
+                                    <th>Wednesday</th>
+                                    <th>Thursday</th>
+                                    <th>Friday</th>
+                                    <th>Saturday</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tt-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Slot Modal -->
+    <div class="modal-overlay" id="slot-modal">
+        <div class="modal" style="max-width:440px">
+            <div class="modal-header">
+                <h3 style="font-size:1rem;font-weight:700" id="slot-modal-title">Edit Slot</h3>
+                <button class="modal-close"
+                    onclick="document.getElementById('slot-modal').classList.remove('open')">✕</button>
+            </div>
+            <form id="slot-form">
+                <input type="hidden" id="slot-id" />
+                <input type="hidden" id="slot-mode" />
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Day</label><select class="form-control"
+                            id="slot-day" id="slot-day">
+                            <option>Monday</option>
+                            <option>Tuesday</option>
+                            <option>Wednesday</option>
+                            <option>Thursday</option>
+                            <option>Friday</option>
+                            <option>Saturday</option>
+                        </select></div>
+                    <div class="form-group"><label class="form-label">Period #</label><input class="form-control"
+                            id="slot-period" type="number" min="1" max="8" /></div>
+                </div>
+                <div class="form-group"><label class="form-label">Subject</label><select class="form-control"
+                        id="slot-subject"></select></div>
+                <div class="form-group"><label class="form-label">Faculty</label><select class="form-control"
+                        id="slot-faculty"></select></div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Start Time</label><input class="form-control"
+                            id="slot-start" type="time" /></div>
+                    <div class="form-group"><label class="form-label">End Time</label><input class="form-control"
+                            id="slot-end" type="time" /></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.5rem">
+                    <button type="button" class="btn btn-danger btn-sm" id="slot-delete-btn" onclick="deleteSlot()">🗑️
+                        Delete</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/admin-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildAdminSidebar('timetable');
+        document.getElementById('topbar-container').innerHTML = buildAdminTopBar('Edit Timetable');
+
+        const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
+        let ttData = [], subjects = [], faculty = [];
+
+        async function loadTimetable() {
+            const cls = document.getElementById('sel-class').value;
+            const sec = document.getElementById('sel-section').value;
+            ttData = await api('GET', `/api/admin/timetable?class=${cls}&section=${sec}`);
+            renderGrid();
+        }
+
+        function renderGrid() {
+            const rows = PERIODS.map(p => {
+                const times = ttData.find(t => t.period === p) || {};
+                const cells = DAYS.map(day => {
+                    const slot = ttData.find(t => t.period === p && t.day === day);
+                    if (slot) return `<td><div class="tt-cell" onclick="openEdit(${slot.id})"><div class="subject">${slot.subject}</div><div class="faculty">${slot.faculty}</div><div style="font-size:.65rem;color:var(--text-muted)">${slot.start_time || ''} – ${slot.end_time || ''}</div></div></td>`;
+                    return `<td><div class="tt-empty" onclick="openAddSlotFor('${day}',${p})">➕</div></td>`;
+                });
+                return `<tr><td style="font-weight:700;font-size:.8rem">P${p}<br/><span style="color:var(--text-muted);font-size:.68rem;font-weight:400">${times.start_time || ''}</span></td>${cells.join('')}</tr>`;
+            });
+            document.getElementById('tt-tbody').innerHTML = rows.join('');
+        }
+
+        function openEdit(id) {
+            const slot = ttData.find(s => s.id === id);
+            document.getElementById('slot-modal-title').textContent = 'Edit Slot';
+            document.getElementById('slot-id').value = id;
+            document.getElementById('slot-mode').value = 'edit';
+            document.getElementById('slot-day').value = slot.day;
+            document.getElementById('slot-period').value = slot.period;
+            document.getElementById('slot-start').value = slot.start_time || '';
+            document.getElementById('slot-end').value = slot.end_time || '';
+            fillDropdowns(slot.subject_id, slot.faculty_id);
+            document.getElementById('slot-delete-btn').style.display = '';
+            document.getElementById('slot-modal').classList.add('open');
+        }
+
+        function openAddSlot() { openAddSlotFor('Monday', 1); }
+        function openAddSlotFor(day, period) {
+            document.getElementById('slot-modal-title').textContent = 'Add Slot';
+            document.getElementById('slot-id').value = '';
+            document.getElementById('slot-mode').value = 'add';
+            document.getElementById('slot-day').value = day;
+            document.getElementById('slot-period').value = period;
+            document.getElementById('slot-start').value = '';
+            document.getElementById('slot-end').value = '';
+            fillDropdowns(null, null);
+            document.getElementById('slot-delete-btn').style.display = 'none';
+            document.getElementById('slot-modal').classList.add('open');
+        }
+
+        function fillDropdowns(selSubjectId, selFacultyId) {
+            const cls = document.getElementById('sel-class').value;
+            const subs = subjects.filter(s => s.class == cls);
+            document.getElementById('slot-subject').innerHTML = subs.map(s => `<option value="${s.id}" ${s.id == selSubjectId ? 'selected' : ''}>${s.name}</option>`).join('');
+            document.getElementById('slot-faculty').innerHTML = faculty.map(f => `<option value="${f.id}" ${f.id == selFacultyId ? 'selected' : ''}>${f.name} (${f.subject})</option>`).join('');
+        }
+
+        document.getElementById('slot-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            const mode = document.getElementById('slot-mode').value;
+            const id = document.getElementById('slot-id').value;
+            const payload = {
+                day: document.getElementById('slot-day').value,
+                period: document.getElementById('slot-period').value,
+                subject_id: document.getElementById('slot-subject').value,
+                faculty_id: document.getElementById('slot-faculty').value,
+                start_time: document.getElementById('slot-start').value,
+                end_time: document.getElementById('slot-end').value,
+                class: document.getElementById('sel-class').value,
+                section: document.getElementById('sel-section').value
+            };
+            try {
+                if (mode === 'edit') await api('PUT', `/api/admin/timetable/${id}`, payload);
+                else await api('POST', '/api/admin/timetable', payload);
+                showToast('Saved!', 'success');
+                document.getElementById('slot-modal').classList.remove('open');
+                await loadTimetable();
+            } catch (err) { showToast(err.message, 'error'); }
+        });
+
+        async function deleteSlot() {
+            const id = document.getElementById('slot-id').value;
+            if (!id) return;
+            if (!confirm('Delete this timetable slot?')) return;
+            await api('DELETE', `/api/admin/timetable/${id}`);
+            showToast('Slot deleted', 'success');
+            document.getElementById('slot-modal').classList.remove('open');
+            await loadTimetable();
+        }
+
+        (async () => {
+            await initAdminPage();
+            [subjects, faculty] = await Promise.all([api('GET', '/api/admin/subjects'), api('GET', '/api/admin/faculty')]);
+            await loadTimetable();
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>

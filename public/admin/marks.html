@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Marks — Admin Panel</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <style>
+        .marks-input {
+            width: 80px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: .35rem .5rem;
+            color: var(--text-primary);
+            font-size: .88rem;
+            text-align: center;
+        }
+
+        .marks-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        tr.modified td:first-child {
+            border-left: 3px solid var(--primary);
+        }
+
+        .rank-badge {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(37, 99, 235, .12);
+            color: var(--primary-light);
+            font-size: .75rem;
+            font-weight: 700;
+            line-height: 28px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+
+                <!-- ── Filter bar ─────────────────────────────────────── -->
+                <div class="card" style="margin-bottom:1.25rem">
+                    <div class="card-title" style="margin-bottom:1rem">🔍 Select Class, Subject & Exam</div>
+                    <div style="display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap">
+
+                        <div class="form-group" style="margin:0;min-width:110px">
+                            <label class="form-label" style="font-size:.72rem">Class</label>
+                            <select class="form-control" id="sel-class" onchange="onClassChange()"
+                                style="padding:.45rem .6rem">
+                                <option value="6">Class 6</option>
+                                <option value="7">Class 7</option>
+                                <option value="8" selected>Class 8</option>
+                                <option value="9">Class 9</option>
+                                <option value="10">Class 10</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin:0;min-width:90px">
+                            <label class="form-label" style="font-size:.72rem">Section</label>
+                            <select class="form-control" id="sel-section" style="padding:.45rem .6rem">
+                                <option>A</option>
+                                <option>B</option>
+                                <option>C</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin:0;min-width:190px">
+                            <label class="form-label" style="font-size:.72rem">Subject</label>
+                            <select class="form-control" id="sel-subject" style="padding:.45rem .6rem">
+                                <option value="">— Loading —</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin:0;min-width:115px">
+                            <label class="form-label" style="font-size:.72rem">Exam Type</label>
+                            <select class="form-control" id="sel-exam" style="padding:.45rem .6rem">
+                                <option value="FA1">FA1</option>
+                                <option value="FA2">FA2</option>
+                                <option value="SA1">SA1</option>
+                                <option value="SA2">SA2</option>
+                                <option value="Annual">Annual</option>
+                            </select>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="loadClassMarks()">Load Students</button>
+                    </div>
+
+                    <!-- quick global max setter -->
+                    <div id="global-row"
+                        style="display:none;margin-top:.75rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+                        <span style="font-size:.8rem;color:var(--text-muted)">Set max marks for all:</span>
+                        <input type="number" id="global-max" class="form-control" placeholder="e.g. 100" min="1"
+                            max="200" style="width:90px;padding:.3rem .5rem;font-size:.85rem"
+                            onchange="applyGlobalMax()" />
+                        <span style="font-size:.78rem;color:var(--text-muted)">then click Load or type individual
+                            values</span>
+                    </div>
+                </div>
+
+                <!-- ── Info banner ──────────────────────────────────────── -->
+                <div
+                    style="background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.18);border-radius:8px;padding:.6rem 1rem;font-size:.8rem;color:var(--text-secondary);margin-bottom:1rem">
+                    ✏️ Select a <strong>class → subject → exam</strong> to load all students in one editable table.
+                    Empty rows are skipped when saving. Click <strong>💾 Save All Marks</strong> when done.
+                </div>
+
+                <!-- ── Marks table ──────────────────────────────────────── -->
+                <div class="card" id="marks-card" style="display:none">
+                    <div class="card-header">
+                        <h3 class="card-title" id="marks-title">Marks</h3>
+                        <div style="display:flex;gap:.5rem;align-items:center">
+                            <span id="marks-summary" style="font-size:.78rem;color:var(--text-muted)"></span>
+                            <button class="btn btn-success" id="save-btn" onclick="saveAll()">💾 Save All Marks</button>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Student Name</th>
+                                    <th>Student ID</th>
+                                    <th>Marks Obtained</th>
+                                    <th>Out of (Max)</th>
+                                    <th>%</th>
+                                    <th>Grade</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="marks-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div id="no-students" style="display:none;text-align:center;padding:2rem;color:var(--text-muted)">
+                        No students found in this class/section.
+                    </div>
+                </div>
+
+                <div id="no-selection" class="card" style="text-align:center;padding:3rem;color:var(--text-muted)">
+                    Select a class, subject and exam type, then click <strong>Load Students</strong>.
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/admin-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildAdminSidebar('marks');
+        document.getElementById('topbar-container').innerHTML = buildAdminTopBar('Marks — Class & Subject Wise Entry');
+
+        let currentSubjectId = null;
+        let currentStudents = [];
+
+        // ── Grade helper ─────────────────────────────────────────────────
+        function gradeFor(pct) {
+            if (pct >= 90) return { g: 'A+', cls: 'grade-A' };
+            if (pct >= 75) return { g: 'A', cls: 'grade-A' };
+            if (pct >= 60) return { g: 'B', cls: 'grade-B' };
+            if (pct >= 45) return { g: 'C', cls: 'grade-C' };
+            if (pct >= 33) return { g: 'D', cls: 'grade-D' };
+            return { g: 'F', cls: 'grade-F' };
+        }
+
+        // ── When class changes — reload subject dropdown ──────────────────
+        async function onClassChange() {
+            const cls = document.getElementById('sel-class').value;
+            const subjects = await api('GET', `/api/admin/subjects?class=${cls}`).catch(() => []);
+            const sel = document.getElementById('sel-subject');
+            sel.innerHTML = subjects.length
+                ? subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('')
+                : '<option value="">No subjects found</option>';
+        }
+
+        // ── Load all students for the selected class + subject + exam ─────
+        async function loadClassMarks() {
+            const cls = document.getElementById('sel-class').value;
+            const sec = document.getElementById('sel-section').value;
+            const subId = document.getElementById('sel-subject').value;
+            const exam = document.getElementById('sel-exam').value;
+            if (!subId) { showToast('Please select a subject', 'error'); return; }
+
+            currentSubjectId = subId;
+            document.getElementById('marks-card').style.display = '';
+            document.getElementById('no-selection').style.display = 'none';
+            document.getElementById('marks-tbody').innerHTML =
+                '<tr><td colspan="8" style="text-align:center;padding:2rem">Loading...</td></tr>';
+
+            const data = await api('GET',
+                `/api/admin/marks/class-view?class=${cls}&section=${sec}&subject_id=${subId}&exam_type=${exam}`
+            ).catch(e => { showToast(e.message, 'error'); return null; });
+
+            if (!data) return;
+
+            currentStudents = data.students;
+            const subjectName = document.getElementById('sel-subject').selectedOptions[0]?.text || '';
+            document.getElementById('marks-title').textContent =
+                `📚 ${subjectName} — Class ${cls}${sec} — ${exam}`;
+
+            if (!data.students.length) {
+                document.getElementById('marks-tbody').innerHTML = '';
+                document.getElementById('no-students').style.display = '';
+                document.getElementById('marks-summary').textContent = '0 students';
+                return;
+            }
+            document.getElementById('no-students').style.display = 'none';
+            document.getElementById('global-row').style.display = 'flex';
+
+            const filled = data.students.filter(s => s.marks_obtained !== '').length;
+            document.getElementById('marks-summary').textContent =
+                `${data.total} students · ${filled} marks entered`;
+
+            document.getElementById('marks-tbody').innerHTML = data.students.map((s, i) => {
+                const obt = s.marks_obtained !== '' ? s.marks_obtained : '';
+                const max = s.max_marks ?? 100;
+                const pct = obt !== '' ? (obt / max * 100).toFixed(1) : '';
+                const gObj = pct !== '' ? gradeFor(parseFloat(pct)) : null;
+                const isNew = obt === '';
+                return `<tr data-sid="${s.student_id}" ${!isNew ? '' : ''}>
+                    <td><span class="rank-badge">${i + 1}</span></td>
+                    <td style="font-weight:600">${s.name}</td>
+                    <td><code style="font-size:.78rem">${s.student_id}</code></td>
+                    <td>
+                        <input type="number" class="marks-input" min="0" step="0.5"
+                            id="obt-${s.student_id}" value="${obt}"
+                            oninput="recalc('${s.student_id}')"/>
+                    </td>
+                    <td>
+                        <input type="number" class="marks-input" min="1" max="200"
+                            id="max-${s.student_id}" value="${max}"
+                            oninput="recalc('${s.student_id}')"/>
+                    </td>
+                    <td id="pct-${s.student_id}" style="font-weight:600">
+                        ${pct !== '' ? pct + '%' : '—'}
+                    </td>
+                    <td id="grade-${s.student_id}">
+                        ${gObj ? `<span class="${gObj.cls}">${gObj.g}</span>` : '—'}
+                    </td>
+                    <td id="status-${s.student_id}" style="font-size:.75rem;color:var(--text-muted)">
+                        ${isNew ? '🆕 New' : '✅ Saved'}
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        // ── Live recalculate a single row ─────────────────────────────────
+        function recalc(sid) {
+            const obt = parseFloat(document.getElementById(`obt-${sid}`)?.value);
+            const max = parseFloat(document.getElementById(`max-${sid}`)?.value) || 100;
+            const pctEl = document.getElementById(`pct-${sid}`);
+            const gradeEl = document.getElementById(`grade-${sid}`);
+            const statEl = document.getElementById(`status-${sid}`);
+
+            if (!isNaN(obt) && obt !== '') {
+                const pct = (obt / max * 100).toFixed(1);
+                const gObj = gradeFor(parseFloat(pct));
+                if (pctEl) pctEl.textContent = pct + '%';
+                if (gradeEl) gradeEl.innerHTML = `<span class="${gObj.cls}">${gObj.g}</span>`;
+                if (statEl) statEl.textContent = '✏️ Modified';
+                document.querySelector(`tr[data-sid="${sid}"]`)?.classList.add('modified');
+            } else {
+                if (pctEl) pctEl.textContent = '—';
+                if (gradeEl) gradeEl.textContent = '—';
+            }
+        }
+
+        // ── Apply a global max marks to all rows ──────────────────────────
+        function applyGlobalMax() {
+            const gm = document.getElementById('global-max').value;
+            if (!gm) return;
+            currentStudents.forEach(s => {
+                const mx = document.getElementById(`max-${s.student_id}`);
+                if (mx) { mx.value = gm; recalc(s.student_id); }
+            });
+        }
+
+        // ── Save all marks ─────────────────────────────────────────────────
+        async function saveAll() {
+            const exam = document.getElementById('sel-exam').value;
+            if (!currentSubjectId) { showToast('Load students first', 'error'); return; }
+
+            const entries = currentStudents
+                .map(s => ({
+                    student_id: s.student_id,
+                    marks_obtained: document.getElementById(`obt-${s.student_id}`)?.value ?? '',
+                    max_marks: document.getElementById(`max-${s.student_id}`)?.value ?? 100,
+                }))
+                .filter(e => e.marks_obtained !== '' && !isNaN(parseFloat(e.marks_obtained)));
+
+            if (!entries.length) { showToast('Enter at least one mark to save', 'error'); return; }
+
+            const btn = document.getElementById('save-btn');
+            btn.textContent = 'Saving...'; btn.disabled = true;
+            try {
+                await api('POST', '/api/admin/marks/class-bulk', {
+                    subject_id: currentSubjectId,
+                    exam_type: exam,
+                    entries
+                });
+                showToast(`✅ ${entries.length} student mark(s) saved!`, 'success');
+                // Update status badges
+                entries.forEach(e => {
+                    const st = document.getElementById(`status-${e.student_id}`);
+                    if (st) st.textContent = '✅ Saved';
+                    document.querySelector(`tr[data-sid="${e.student_id}"]`)?.classList.remove('modified');
+                });
+                // Refresh summary
+                const filled = currentStudents.filter(s => {
+                    const v = document.getElementById(`obt-${s.student_id}`)?.value;
+                    return v !== '' && !isNaN(parseFloat(v));
+                }).length;
+                document.getElementById('marks-summary').textContent =
+                    `${currentStudents.length} students · ${filled} marks entered`;
+            } catch (e) { showToast(e.message, 'error'); }
+            finally { btn.textContent = '💾 Save All Marks'; btn.disabled = false; }
+        }
+
+        // ── Init ────────────────────────────────────────────────────────────
+        (async () => {
+            await initAdminPage();
+            await onClassChange();   // load subjects for default class 8
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>

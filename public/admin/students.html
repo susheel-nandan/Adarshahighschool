@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Students — Admin Panel</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+
+                <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem">
+                    <input class="form-control" id="search" type="text" placeholder="🔍 Search name or ID..."
+                        oninput="filterStudents()" style="max-width:280px" />
+                    <select class="form-control" id="filter-class" onchange="filterStudents()"
+                        style="width:auto;padding:.45rem .75rem">
+                        <option value="">All Classes</option>
+                        <option value="6">Class 6</option>
+                        <option value="7">Class 7</option>
+                        <option value="8">Class 8</option>
+                        <option value="9">Class 9</option>
+                        <option value="10">Class 10</option>
+                    </select>
+                    <button class="btn btn-success btn-sm" onclick="openAddModal()">➕ Add Student</button>
+                    <div id="student-count" style="font-size:.82rem;color:var(--text-muted);margin-left:auto"></div>
+                </div>
+
+                <div class="card">
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Student ID</th>
+                                    <th>Name</th>
+                                    <th>Class</th>
+                                    <th>DOB</th>
+                                    <th>Parent</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="students-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Student Modal -->
+    <div class="modal-overlay" id="add-modal">
+        <div class="modal" style="max-width:520px">
+            <div class="modal-header">
+                <h3 style="font-size:1rem;font-weight:700">➕ Add New Student</h3>
+                <button class="modal-close" onclick="closeAddModal()">✕</button>
+            </div>
+            <form id="add-form">
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control"
+                            id="add-name" type="text" required /></div>
+                    <div class="form-group"><label class="form-label">Date of Birth *</label><input class="form-control"
+                            id="add-dob" type="date" required /></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Student ID *</label><input class="form-control"
+                            id="add-sid" type="text" placeholder="e.g. STU2024008" required /></div>
+                    <div class="form-group"><label class="form-label">Password *</label><input class="form-control"
+                            id="add-pwd" type="text" placeholder="Assign initial password" required /></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Class *</label>
+                        <select class="form-control" id="add-class" required>
+                            <option value="">Select</option>
+                            <option>6</option>
+                            <option>7</option>
+                            <option>8</option>
+                            <option>9</option>
+                            <option>10</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Section *</label>
+                        <select class="form-control" id="add-section" required>
+                            <option value="">Select</option>
+                            <option>A</option>
+                            <option>B</option>
+                            <option>C</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group"><label class="form-label">Parent ID (optional)</label><input
+                        class="form-control" id="add-parent" type="text" placeholder="e.g. PAR006" /></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.5rem">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddModal()">Cancel</button>
+                    <button type="submit" class="btn btn-success">Create Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/admin-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildAdminSidebar('students');
+        document.getElementById('topbar-container').innerHTML = buildAdminTopBar('Manage Students');
+
+        let allStudents = [];
+
+        function renderStudents(list) {
+            document.getElementById('student-count').textContent = `${list.length} student(s)`;
+            document.getElementById('students-tbody').innerHTML = list.map(s => `
+      <tr>
+        <td style="font-family:monospace;font-size:.82rem">${s.student_id}</td>
+        <td><strong>${s.name}</strong></td>
+        <td>Class ${s.class}-${s.section}</td>
+        <td>${fmtDate(s.dob)}</td>
+        <td style="font-size:.8rem">${s.parent_name || '<span style="color:var(--text-muted)">—</span>'}<br/><span style="color:var(--text-muted);font-size:.72rem">${s.parent_id || ''}</span></td>
+        <td>
+          <a href="/admin/student-edit.html?id=${s.student_id}"><button class="btn btn-primary btn-sm">✏️ Edit</button></a>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:2rem">No students found.</td></tr>';
+        }
+
+        function filterStudents() {
+            const q = document.getElementById('search').value.toLowerCase();
+            const cl = document.getElementById('filter-class').value;
+            const filtered = allStudents.filter(s => {
+                const matchQ = !q || s.name.toLowerCase().includes(q) || s.student_id.toLowerCase().includes(q);
+                const matchCl = !cl || String(s.class) === cl;
+                return matchQ && matchCl;
+            });
+            renderStudents(filtered);
+        }
+
+        // Pre-fill class filter from URL
+        const urlCls = new URLSearchParams(location.search).get('class');
+        if (urlCls) document.getElementById('filter-class').value = urlCls;
+
+        function openAddModal() { document.getElementById('add-modal').classList.add('open'); }
+        function closeAddModal() { document.getElementById('add-modal').classList.remove('open'); document.getElementById('add-form').reset(); }
+
+        document.getElementById('add-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await api('POST', '/api/admin/students', {
+                    name: document.getElementById('add-name').value.trim(),
+                    dob: document.getElementById('add-dob').value,
+                    student_id: document.getElementById('add-sid').value.trim(),
+                    password: document.getElementById('add-pwd').value,
+                    class: document.getElementById('add-class').value,
+                    section: document.getElementById('add-section').value,
+                    parent_id: document.getElementById('add-parent').value.trim() || null
+                });
+                showToast('Student created successfully!', 'success');
+                closeAddModal();
+                loadStudents();
+            } catch (err) { showToast(err.message, 'error'); }
+        });
+
+        async function loadStudents() {
+            allStudents = await api('GET', '/api/admin/students');
+            filterStudents();
+        }
+
+        (async () => {
+            await initAdminPage();
+            await loadStudents();
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>

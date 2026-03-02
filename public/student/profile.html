@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>My Profile — Student Portal</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start">
+                    <!-- Profile -->
+                    <div class="card">
+                        <div style="text-align:center;margin-bottom:1.5rem">
+                            <div id="profile-avatar"
+                                style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--teal));display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;margin:0 auto .75rem;box-shadow:0 4px 20px rgba(37,99,235,.3)">
+                                ?</div>
+                            <div id="profile-name" style="font-family:'Outfit';font-size:1.3rem;font-weight:700"></div>
+                            <div id="profile-class" style="color:var(--teal-light);font-size:.85rem;font-weight:600">
+                            </div>
+                        </div>
+                        <div class="info-list" id="student-info"></div>
+                    </div>
+
+                    <!-- Parent Info (read-only) + Password Change -->
+                    <div style="display:flex;flex-direction:column;gap:1.25rem">
+                        <div class="card">
+                            <h3 class="card-title" style="margin-bottom:1rem">👨‍👩‍👧 Parent / Guardian Info</h3>
+                            <div
+                                style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:.6rem .875rem;font-size:.78rem;color:var(--accent-light);margin-bottom:.875rem">
+                                🔒 Parent contact details are read-only for students.
+                            </div>
+                            <div class="info-list" id="parent-info"></div>
+                        </div>
+
+                        <div class="card">
+                            <h3 class="card-title" style="margin-bottom:1rem">🔑 Change Password</h3>
+                            <form id="pwd-form">
+                                <div class="form-group">
+                                    <label class="form-label">Current Password</label>
+                                    <input class="form-control" id="old-pwd" type="password"
+                                        placeholder="Enter current password" required />
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">New Password</label>
+                                    <input class="form-control" id="new-pwd" type="password"
+                                        placeholder="Enter new password" required />
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Confirm New Password</label>
+                                    <input class="form-control" id="confirm-pwd" type="password"
+                                        placeholder="Repeat new password" required />
+                                </div>
+                                <button type="submit" class="btn btn-primary w-full">Update Password</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/student-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildStudentSidebar('profile');
+        document.getElementById('topbar-container').innerHTML = buildStudentTopBar('My Profile');
+
+        document.getElementById('pwd-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newP = document.getElementById('new-pwd').value;
+            if (newP !== document.getElementById('confirm-pwd').value) { showToast('Passwords do not match', 'error'); return; }
+            try {
+                const res = await api('POST', '/api/auth/change-password', {
+                    old_password: document.getElementById('old-pwd').value,
+                    new_password: newP
+                });
+                showToast(res.message, 'success');
+                e.target.reset();
+            } catch (err) { showToast(err.message, 'error'); }
+        });
+
+        (async () => {
+            const profile = await initStudentPage();
+            if (!profile) return;
+
+            const av = document.getElementById('profile-avatar');
+            av.textContent = (profile.name || 'S')[0];
+            document.getElementById('profile-name').textContent = profile.name;
+            document.getElementById('profile-class').textContent = `Class ${profile.class}${profile.section} • Academic Year 2025–26`;
+
+            document.getElementById('student-info').innerHTML = [
+                { k: '🆔 Student ID', v: profile.student_id },
+                { k: '🎂 Date of Birth', v: fmtDate(profile.dob) },
+                { k: '📚 Class', v: `Class ${profile.class} – Section ${profile.section}` },
+            ].map(i => `<div class="info-item"><span class="info-key">${i.k}</span><span class="info-val">${i.v}</span></div>`).join('');
+
+            document.getElementById('parent-info').innerHTML = [
+                { k: '👤 Parent Name', v: profile.parent_name || '—' },
+                { k: '📞 Parent Mobile', v: profile.parent_mobile || '—' },
+            ].map(i => `<div class="info-item"><span class="info-key">${i.k}</span><span class="info-val">${i.v}</span></div>`).join('');
+
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>

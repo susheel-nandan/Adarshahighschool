@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login — Adarsha High School Portal</title>
+    <meta name="description" content="Login to Adarsha High School Portal as a student or parent." />
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body class="auth-page">
+
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="auth-card animate-up">
+        <div style="text-align:center;margin-bottom:1.75rem">
+            <div
+                style="width:56px;height:56px;background:linear-gradient(135deg,var(--primary),var(--teal));border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin:0 auto 0.75rem">
+                🎓</div>
+            <h1 style="font-size:1.5rem;font-weight:800;margin-bottom:0.2rem">Welcome Back</h1>
+            <p style="color:var(--text-secondary);font-size:0.875rem">Sign in to Adarsha High School Portal</p>
+        </div>
+
+        <div class="role-toggle" style="flex-wrap:wrap">
+            <button class="role-btn active" id="btn-student" onclick="setRole('student')">🎒 Student</button>
+            <button class="role-btn" id="btn-parent" onclick="setRole('parent')">👨‍👩‍👧 Parent</button>
+            <button class="role-btn" id="btn-admin" onclick="setRole('admin')">🔧 Admin</button>
+            <button class="role-btn" id="btn-teacher" onclick="setRole('teacher')">👩‍🏫 Teacher</button>
+        </div>
+
+        <form id="login-form">
+            <div class="form-group">
+                <label class="form-label" id="id-label">Student ID</label>
+                <input class="form-control" id="user-id" type="text" placeholder="e.g. STU2024001" required />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <div style="position:relative">
+                    <input class="form-control" id="password" type="password" placeholder="Enter your password" required
+                        style="padding-right:3rem" />
+                    <button type="button" onclick="togglePwd()"
+                        style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);font-size:1rem;cursor:pointer"
+                        id="pwd-toggle">👁</button>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-full btn-lg" id="login-btn" style="margin-top:1rem">Sign
+                In</button>
+        </form>
+
+        <button onclick="showForgotModal()"
+            style="background:none;border:none;color:var(--primary-light);font-size:0.85rem;cursor:pointer;width:100%;text-align:center;margin-bottom:.5rem"
+            id="forgot-btn">🔑
+            Forgot Password? Reset via OTP</button>
+        <p style="text-align:center;font-size:0.82rem;color:var(--text-muted)" id="signup-notice">
+            New account? Contact the school admin for your login credentials.
+        </p>
+
+        <div
+            style="margin-top:1.25rem;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:0.75rem;font-size:0.78rem;color:var(--accent-light)">
+            <strong>Demo Credentials:</strong><br />
+            Student: <code>STU2024001</code> / <code>password123</code><br />
+            Parent: <code>PAR001</code> / <code>password123</code><br />
+            Admin: <code>ADMIN001</code> / <code>admin123</code><br />
+            Teacher: <code>FAC001</code> / <code>teacher123</code>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal-overlay" id="forgot-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 style="font-size:1rem;font-weight:700">Reset Password via OTP</h3>
+                <button class="modal-close" onclick="closeForgotModal()">✕</button>
+            </div>
+            <div id="otp-step-1">
+                <div class="role-toggle" style="margin-bottom:1rem">
+                    <button class="role-btn active" id="otp-btn-student" onclick="setOtpRole('student')">🎒
+                        Student</button>
+                    <button class="role-btn" id="otp-btn-parent" onclick="setOtpRole('parent')">👨‍👩‍👧 Parent</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Your ID</label>
+                    <input class="form-control" id="otp-identifier" type="text" placeholder="Student ID or Parent ID" />
+                </div>
+                <button class="btn btn-primary w-full" onclick="requestOtp()">Send OTP</button>
+                <p style="font-size:0.75rem;color:var(--text-muted);margin-top:.5rem;text-align:center">OTP will be sent
+                    to your registered mobile/email</p>
+            </div>
+            <div id="otp-step-2" class="hidden">
+                <div class="form-group">
+                    <label class="form-label">Enter OTP</label>
+                    <input class="form-control" id="otp-code" type="text" placeholder="6-digit OTP (Demo: 123456)"
+                        maxlength="6" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">New Password</label>
+                    <input class="form-control" id="otp-new-pwd" type="password" placeholder="Enter new password" />
+                </div>
+                <button class="btn btn-success w-full" onclick="resetPassword()">Reset Password</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script>
+        let currentRole = 'student';
+        let otpRole = 'student';
+
+        function setRole(role) {
+            currentRole = role;
+            document.getElementById('btn-student').classList.toggle('active', role === 'student');
+            document.getElementById('btn-parent').classList.toggle('active', role === 'parent');
+            document.getElementById('btn-admin').classList.toggle('active', role === 'admin');
+            const labels = { student: ['Student ID', 'e.g. STU2024001'], parent: ['Parent ID', 'e.g. PAR001'], admin: ['Admin ID', 'e.g. ADMIN001'] };
+            document.getElementById('id-label').textContent = labels[role][0];
+            document.getElementById('user-id').placeholder = labels[role][1];
+            document.getElementById('forgot-btn').style.display = role === 'admin' ? 'none' : '';
+            document.getElementById('signup-notice').style.display = '';
+        }
+
+        function setOtpRole(role) {
+            otpRole = role;
+            document.getElementById('otp-btn-student').classList.toggle('active', role === 'student');
+            document.getElementById('otp-btn-parent').classList.toggle('active', role === 'parent');
+        }
+
+        function togglePwd() {
+            const inp = document.getElementById('password');
+            inp.type = inp.type === 'password' ? 'text' : 'password';
+        }
+
+        function showForgotModal() { document.getElementById('forgot-modal').classList.add('open'); }
+        function closeForgotModal() {
+            document.getElementById('forgot-modal').classList.remove('open');
+            document.getElementById('otp-step-1').classList.remove('hidden');
+            document.getElementById('otp-step-2').classList.add('hidden');
+        }
+
+        async function requestOtp() {
+            const identifier = document.getElementById('otp-identifier').value.trim();
+            if (!identifier) { showToast('Please enter your ID', 'error'); return; }
+            try {
+                const res = await api('POST', '/api/auth/request-otp', { identifier, role: otpRole });
+                showToast(res.message, 'success');
+                document.getElementById('otp-step-1').classList.add('hidden');
+                document.getElementById('otp-step-2').classList.remove('hidden');
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        async function resetPassword() {
+            const otp = document.getElementById('otp-code').value.trim();
+            const newPwd = document.getElementById('otp-new-pwd').value;
+            const identifier = document.getElementById('otp-identifier').value.trim();
+            if (!otp || !newPwd) { showToast('Fill all fields', 'error'); return; }
+            try {
+                const res = await api('POST', '/api/auth/verify-otp', { identifier, otp, new_password: newPwd });
+                showToast(res.message, 'success');
+                closeForgotModal();
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('login-btn');
+            btn.textContent = 'Signing in...';
+            btn.disabled = true;
+            try {
+                const res = await api('POST', '/api/auth/login', {
+                    role: currentRole,
+                    id: document.getElementById('user-id').value.trim(),
+                    password: document.getElementById('password').value
+                });
+                showToast(`Welcome! 👋`, 'success');
+                setTimeout(() => {
+                    if (res.role === 'student') window.location.href = '/student/dashboard.html';
+                    else if (res.role === 'parent') window.location.href = '/parent/dashboard.html';
+                    else if (res.role === 'teacher') window.location.href = '/teacher/dashboard.html';
+                    else window.location.href = '/admin/dashboard.html';
+                }, 800);
+            } catch (e) {
+                showToast(e.message, 'error');
+                btn.textContent = 'Sign In';
+                btn.disabled = false;
+            }
+        });
+
+        // Auto redirect if already logged in
+        (async () => {
+            const s = await checkSession();
+            if (s.loggedIn) {
+                if (s.role === 'student') window.location.href = '/student/dashboard.html';
+                else if (s.role === 'parent') window.location.href = '/parent/dashboard.html';
+                else if (s.role === 'teacher') window.location.href = '/teacher/dashboard.html';
+                else if (s.role === 'admin') window.location.href = '/admin/dashboard.html';
+            }
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>

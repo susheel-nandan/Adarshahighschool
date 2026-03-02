@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>My Profile — Teacher Portal</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade" style="max-width:680px">
+
+                <div
+                    style="background:linear-gradient(135deg,#0d9488,#0f766e);border-radius:14px;padding:2rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">
+                    <div style="width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.2);border:3px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:800;color:#fff;flex-shrink:0"
+                        id="p-av">T</div>
+                    <div style="color:#fff">
+                        <div style="font-size:1.3rem;font-weight:800" id="p-name">—</div>
+                        <div style="opacity:.75;font-size:.85rem">Teacher ID: <code id="p-tid">—</code></div>
+                        <div style="opacity:.75;font-size:.85rem">Subject: <span id="p-sub">—</span></div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom:1.25rem">
+                    <div class="section-title"
+                        style="font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:1rem">
+                        Current Details</div>
+                    <div id="info-rows"></div>
+                </div>
+
+                <div class="card">
+                    <div class="section-title"
+                        style="font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:1rem">
+                        🔑 Change Password</div>
+                    <form id="pwd-form">
+                        <div class="form-group">
+                            <label class="form-label">Current Password</label>
+                            <input class="form-control" id="old-pwd" type="password" placeholder="Current password"
+                                required />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">New Password</label>
+                            <input class="form-control" id="new-pwd" type="password" placeholder="Min 6 characters"
+                                required />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Confirm New Password</label>
+                            <input class="form-control" id="conf-pwd" type="password" placeholder="Repeat new password"
+                                required />
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="pwd-btn">Update Password</button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <script src="/js/utils.js"></script>
+    <script src="/js/teacher-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildTeacherSidebar('profile');
+        document.getElementById('topbar-container').innerHTML = buildTeacherTopBar('My Profile');
+
+        document.getElementById('pwd-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            const op = document.getElementById('old-pwd').value;
+            const np = document.getElementById('new-pwd').value;
+            const cp = document.getElementById('conf-pwd').value;
+            if (np !== cp) { showToast('Passwords do not match', 'error'); return; }
+            if (np.length < 6) { showToast('Password must be at least 6 characters', 'error'); return; }
+            const btn = document.getElementById('pwd-btn');
+            btn.textContent = 'Saving...'; btn.disabled = true;
+            try {
+                await api('PUT', '/api/teacher/change-password', { old_password: op, new_password: np });
+                showToast('✅ Password updated!', 'success');
+                document.getElementById('pwd-form').reset();
+            } catch (err) { showToast(err.message, 'error'); }
+            finally { btn.textContent = 'Update Password'; btn.disabled = false; }
+        });
+
+        (async () => {
+            const profile = await initTeacherPage();
+            if (!profile) return;
+            document.getElementById('p-name').textContent = profile.name;
+            document.getElementById('p-tid').textContent = profile.teacher_id;
+            document.getElementById('p-sub').textContent = profile.subject;
+            document.getElementById('p-av').textContent = profile.name[0].toUpperCase();
+            document.getElementById('info-rows').innerHTML = [
+                ['Subject', profile.subject],
+                ['Teacher ID', profile.teacher_id],
+                ['Mobile', profile.mobile],
+                ['Email', profile.email || '—'],
+                ['Qualification', profile.qualification || '—'],
+                ['Experience', profile.experience + ' years'],
+            ].map(([k, v]) => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:.65rem 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:.82rem;color:var(--text-muted)">${k}</span>
+        <span style="font-weight:600;font-size:.88rem">${v}</span>
+      </div>`).join('');
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>

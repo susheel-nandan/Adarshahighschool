@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Enter Marks — Teacher Portal</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <style>
+        .marks-table input[type=number] {
+            width: 80px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: .35rem .5rem;
+            color: var(--text-primary);
+            font-size: .88rem;
+            text-align: center;
+        }
+
+        .marks-table input[type=number]:focus {
+            outline: none;
+            border-color: var(--teal);
+        }
+
+        .marks-table td {
+            vertical-align: middle;
+        }
+
+        .pct-cell {
+            font-size: .8rem;
+            font-weight: 700;
+        }
+
+        .modified-row td:first-child {
+            border-left: 3px solid var(--teal);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+
+                <!-- Filters -->
+                <div class="card" style="margin-bottom:1.25rem">
+                    <div class="card-title" style="margin-bottom:1rem">🔍 Select Class & Exam</div>
+                    <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center">
+                        <div>
+                            <label class="form-label">Class</label>
+                            <select class="form-control" id="sel-class" onchange="onClassChange()"
+                                style="min-width:110px">
+                                <option value="">— Class —</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Section</label>
+                            <select class="form-control" id="sel-section" onchange="loadMarks()" style="min-width:90px">
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="C">C</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Exam Type</label>
+                            <select class="form-control" id="sel-exam" onchange="loadMarks()" style="min-width:120px">
+                                <option value="FA1">FA1</option>
+                                <option value="FA2">FA2</option>
+                                <option value="SA1">SA1</option>
+                                <option value="SA2">SA2</option>
+                                <option value="Annual">Annual</option>
+                            </select>
+                        </div>
+                        <div style="margin-top:1.35rem">
+                            <button class="btn btn-primary" onclick="loadMarks()">Load Students</button>
+                        </div>
+                    </div>
+                    <div id="class-info-bar"
+                        style="display:none;margin-top:.75rem;font-size:.82rem;color:var(--text-muted)"></div>
+                </div>
+
+                <!-- Marks table -->
+                <div class="card" id="marks-card" style="display:none">
+                    <div class="card-header">
+                        <div class="card-title" id="marks-title">Marks Entry</div>
+                        <div style="display:flex;gap:.5rem;align-items:center">
+                            <input type="number" class="form-control" id="global-max" placeholder="Max" min="1"
+                                max="200" style="width:80px" onchange="applyGlobalMax()"
+                                title="Set max marks for all rows" />
+                            <span style="font-size:.75rem;color:var(--text-muted)">Max marks</span>
+                            <button class="btn btn-success" onclick="saveMarks()">💾 Save All</button>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table class="data-table marks-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Student Name</th>
+                                    <th>Student ID</th>
+                                    <th>Marks Obtained</th>
+                                    <th>Out of</th>
+                                    <th>%</th>
+                                    <th>Grade</th>
+                                </tr>
+                            </thead>
+                            <tbody id="marks-body"></tbody>
+                        </table>
+                    </div>
+
+                    <div id="no-students" style="display:none;text-align:center;padding:2rem;color:var(--text-muted)">
+                        No students found in this class/section.
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <script src="/js/utils.js"></script>
+    <script src="/js/teacher-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildTeacherSidebar('marks');
+        document.getElementById('topbar-container').innerHTML = buildTeacherTopBar('Enter Marks');
+
+        let assignedClasses = [];
+        let rows = [];
+
+        function grade(pct) {
+            if (pct >= 90) return '<span class="grade-A">A+</span>';
+            if (pct >= 75) return '<span class="grade-A">A</span>';
+            if (pct >= 60) return '<span class="grade-B">B</span>';
+            if (pct >= 45) return '<span class="grade-C">C</span>';
+            if (pct >= 33) return '<span class="grade-D">D</span>';
+            return '<span class="grade-F">F</span>';
+        }
+
+        function calcRow(inp, maxInp, pctCel, gradeCel) {
+            const v = parseFloat(inp.value), m = parseFloat(maxInp.value);
+            if (!isNaN(v) && !isNaN(m) && m > 0) {
+                const p = Math.min(100, Math.round(v / m * 100));
+                pctCel.innerHTML = `${p}%`;
+                gradeCel.innerHTML = grade(p);
+            } else { pctCel.innerHTML = '—'; gradeCel.innerHTML = '—'; }
+            inp.closest('tr').classList.toggle('modified-row', true);
+        }
+
+        function renderRows(students) {
+            rows = students;
+            const tbody = document.getElementById('marks-body');
+            if (!students.length) {
+                document.getElementById('no-students').style.display = '';
+                tbody.innerHTML = '';
+                return;
+            }
+            document.getElementById('no-students').style.display = 'none';
+            tbody.innerHTML = students.map((s, i) => {
+                const pct = s.marks_obtained !== '' && s.max_marks
+                    ? Math.round(s.marks_obtained / s.max_marks * 100) : null;
+                return `<tr data-sid="${s.student_id}">
+        <td>${i + 1}</td>
+        <td style="font-weight:600">${s.name}</td>
+        <td><code style="font-size:.78rem">${s.student_id}</code></td>
+        <td><input type="number" min="0" step="0.5" id="mo-${s.student_id}"
+          value="${s.marks_obtained !== '' ? s.marks_obtained : ''}"
+          onchange="calcRow(this,document.getElementById('mx-${s.student_id}'),
+            document.getElementById('pct-${s.student_id}'),
+            document.getElementById('gr-${s.student_id}'))"/></td>
+        <td><input type="number" min="1" max="200" id="mx-${s.student_id}"
+          value="${s.max_marks || 100}"
+          onchange="calcRow(document.getElementById('mo-${s.student_id}'),this,
+            document.getElementById('pct-${s.student_id}'),
+            document.getElementById('gr-${s.student_id}'))"/></td>
+        <td class="pct-cell" id="pct-${s.student_id}">${pct !== null ? pct + '%' : '—'}</td>
+        <td id="gr-${s.student_id}">${pct !== null ? grade(pct) : '—'}</td>
+      </tr>`;
+            }).join('');
+        }
+
+        async function onClassChange() {
+            await loadMarks();
+        }
+
+        async function loadMarks() {
+            const cls = document.getElementById('sel-class').value;
+            const sec = document.getElementById('sel-section').value;
+            const exam = document.getElementById('sel-exam').value;
+            if (!cls) return;
+
+            document.getElementById('marks-card').style.display = '';
+            document.getElementById('marks-body').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem">Loading...</td></tr>';
+
+            const data = await api('GET', `/api/teacher/marks?class=${cls}&section=${sec}&exam_type=${exam}`).catch(e => {
+                showToast(e.message || 'Failed to load', 'error'); return null;
+            });
+            if (!data) return;
+
+            document.getElementById('marks-title').textContent =
+                `📚 ${data.subject_name} — Class ${cls}${sec} — ${exam}`;
+            document.getElementById('class-info-bar').style.display = '';
+            document.getElementById('class-info-bar').textContent =
+                `${data.students.length} students · Subject: ${data.subject_name}`;
+            renderRows(data.students);
+        }
+
+        async function saveMarks() {
+            const cls = document.getElementById('sel-class').value;
+            const sec = document.getElementById('sel-section').value;
+            const exam = document.getElementById('sel-exam').value;
+            if (!cls) { showToast('Select a class first', 'error'); return; }
+
+            const entries = rows.map(s => ({
+                student_id: s.student_id,
+                marks_obtained: document.getElementById(`mo-${s.student_id}`)?.value ?? '',
+                max_marks: document.getElementById(`mx-${s.student_id}`)?.value ?? 100,
+            }));
+
+            try {
+                await api('POST', '/api/teacher/marks/bulk', { class: cls, section: sec, exam_type: exam, entries });
+                showToast('✅ Marks saved successfully!', 'success');
+                document.querySelectorAll('.modified-row').forEach(r => r.classList.remove('modified-row'));
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        function applyGlobalMax() {
+            const gm = document.getElementById('global-max').value;
+            if (!gm) return;
+            rows.forEach(s => {
+                const mx = document.getElementById(`mx-${s.student_id}`);
+                const mo = document.getElementById(`mo-${s.student_id}`);
+                if (mx) {
+                    mx.value = gm;
+                    calcRow(mo, mx,
+                        document.getElementById(`pct-${s.student_id}`),
+                        document.getElementById(`gr-${s.student_id}`)
+                    );
+                }
+            });
+        }
+
+        (async () => {
+            await initTeacherPage();
+            assignedClasses = await api('GET', '/api/teacher/classes').catch(() => []);
+            const sel = document.getElementById('sel-class');
+            if (!assignedClasses.length) {
+                sel.innerHTML = '<option value="">No classes assigned</option>';
+            } else {
+                sel.innerHTML = '<option value="">— Select Class —</option>' +
+                    [...new Set(assignedClasses.map(c => c.class))].sort()
+                        .map(c => `<option value="${c}">Class ${c}</option>`).join('');
+            }
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>

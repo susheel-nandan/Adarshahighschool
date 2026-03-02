@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Leave Request — Student Portal</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start">
+                    <!-- Leave Form -->
+                    <div class="card">
+                        <h3 class="card-title" style="margin-bottom:1.25rem">📝 Submit Leave Request</h3>
+                        <form id="leave-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">From Date</label>
+                                    <input class="form-control" id="from-date" type="date" required
+                                        onchange="updatePreview()" />
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">To Date</label>
+                                    <input class="form-control" id="to-date" type="date" required
+                                        onchange="updatePreview()" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Reason for Leave</label>
+                                <textarea class="form-control" id="reason" rows="4"
+                                    placeholder="e.g. Fever and cold, doctor visit required..." required
+                                    oninput="updatePreview()"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-full">📨 Submit Leave Request</button>
+                        </form>
+                    </div>
+
+                    <!-- Letter Preview -->
+                    <div class="card">
+                        <h3 class="card-title" style="margin-bottom:1rem">📄 Letter Preview</h3>
+                        <div class="letter-preview" id="letter-preview">
+                            Fill in the form to preview the formal letter...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Past Requests -->
+                <div class="card" style="margin-top:1.25rem">
+                    <h3 class="card-title" style="margin-bottom:1rem">📋 Past Leave Requests</h3>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Submitted</th>
+                                    <th>From</th>
+                                    <th>To</th>
+                                    <th>Reason</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leave-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/student-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildStudentSidebar('leave');
+        document.getElementById('topbar-container').innerHTML = buildStudentTopBar('Leave Request');
+
+        let studentProfile = null;
+
+        function updatePreview() {
+            if (!studentProfile) return;
+            const from = document.getElementById('from-date').value;
+            const to = document.getElementById('to-date').value;
+            const reason = document.getElementById('reason').value.trim();
+            if (!from || !to || !reason) {
+                document.getElementById('letter-preview').textContent = 'Fill in the form to preview the formal letter...';
+                return;
+            }
+            const fromFmt = fmtDate(from);
+            const toFmt = fmtDate(to);
+            const today = fmtDate('2026-02-28');
+            const diff = Math.ceil((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24)) + 1;
+            const letter = `Date: ${today}
+
+To,
+The Class Teacher,
+Class ${studentProfile.class}${studentProfile.section},
+Adarsha High School.
+
+Respected Ma'am/Sir,
+
+I, ${studentProfile.name} (Student ID: ${studentProfile.student_id}), a student of Class ${studentProfile.class}, Section ${studentProfile.section}, am writing to respectfully request leave of absence for ${diff} day(s) from ${fromFmt} to ${toFmt}.
+
+Reason: ${reason}
+
+I assure you that I will cover all missed lessons upon my return and submit any pending assignments on time.
+
+I kindly request you to grant me leave for the mentioned period.
+
+Thanking you,
+Yours obediently,
+${studentProfile.name}
+Class ${studentProfile.class}${studentProfile.section} | ID: ${studentProfile.student_id}
+
+Parent/Guardian: ${studentProfile.parent_name || 'N/A'}
+Contact: ${studentProfile.parent_mobile || 'N/A'}`;
+
+            document.getElementById('letter-preview').textContent = letter;
+        }
+
+        document.getElementById('leave-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await api('POST', '/api/student/leave', {
+                    from_date: document.getElementById('from-date').value,
+                    to_date: document.getElementById('to-date').value,
+                    reason: document.getElementById('reason').value.trim()
+                });
+                showToast('Leave request submitted successfully!', 'success');
+                e.target.reset();
+                updatePreview();
+                loadLeaveHistory();
+            } catch (err) { showToast(err.message, 'error'); }
+        });
+
+        async function loadLeaveHistory() {
+            const requests = await api('GET', '/api/student/leave');
+            document.getElementById('leave-tbody').innerHTML = requests.map(r => {
+                const badge = r.status === 'Approved' ? 'badge-success' : r.status === 'Rejected' ? 'badge-danger' : 'badge-warning';
+                return `<tr>
+        <td>${fmtDate(r.submitted_at?.split('T')[0])}</td>
+        <td>${fmtDate(r.from_date)}</td>
+        <td>${fmtDate(r.to_date)}</td>
+        <td style="max-width:200px;font-size:.82rem">${r.reason.slice(0, 60)}${r.reason.length > 60 ? '...' : ''}</td>
+        <td><span class="badge ${badge}">${r.status}</span></td>
+      </tr>`;
+            }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:1.5rem">No requests submitted yet.</td></tr>';
+        }
+
+        (async () => {
+            studentProfile = await initStudentPage();
+            await loadLeaveHistory();
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>

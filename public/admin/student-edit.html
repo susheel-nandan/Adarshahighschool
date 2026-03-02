@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Edit Student — Admin Panel</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+                <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
+                    <a href="/admin/students.html"><button class="btn btn-secondary btn-sm">← Back</button></a>
+                    <h2 class="card-title" id="page-heading" style="font-size:1.1rem;margin:0">Edit Student</h2>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start">
+                    <!-- Student profile edit -->
+                    <div class="card">
+                        <h3 class="card-title" style="margin-bottom:1rem">🎒 Student Profile</h3>
+                        <form id="profile-form">
+                            <div class="form-row">
+                                <div class="form-group"><label class="form-label">Full Name *</label><input
+                                        class="form-control" id="s-name" type="text" required /></div>
+                                <div class="form-group"><label class="form-label">Date of Birth *</label><input
+                                        class="form-control" id="s-dob" type="date" required /></div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Class *</label>
+                                    <select class="form-control" id="s-class" required>
+                                        <option>6</option>
+                                        <option>7</option>
+                                        <option>8</option>
+                                        <option>9</option>
+                                        <option>10</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Section *</label>
+                                    <select class="form-control" id="s-section" required>
+                                        <option>A</option>
+                                        <option>B</option>
+                                        <option>C</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Linked Parent ID</label>
+                                <input class="form-control" id="s-parent" type="text" placeholder="e.g. PAR001" />
+                            </div>
+                            <button type="submit" class="btn btn-primary w-full">💾 Save Profile Changes</button>
+                        </form>
+                    </div>
+
+                    <div style="display:flex;flex-direction:column;gap:1.25rem">
+                        <!-- Credentials change -->
+                        <div class="card">
+                            <h3 class="card-title" style="margin-bottom:1rem">🔑 Login Credentials</h3>
+                            <div
+                                style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:.6rem .875rem;font-size:.78rem;color:#f87171;margin-bottom:.875rem">
+                                ⚠️ Changing Student ID cascades to all related records. Student must use new ID to
+                                login.
+                            </div>
+                            <form id="cred-form">
+                                <div class="form-group">
+                                    <label class="form-label">Current Student ID</label>
+                                    <input class="form-control" id="c-current-id" type="text" readonly
+                                        style="opacity:.6" />
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">New Student ID (leave blank to keep same)</label>
+                                    <input class="form-control" id="c-new-id" type="text"
+                                        placeholder="Only change when student consults admin" />
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">New Password (leave blank to keep same)</label>
+                                    <input class="form-control" id="c-new-pwd" type="text"
+                                        placeholder="Set a new password" />
+                                </div>
+                                <button type="submit" class="btn btn-warning w-full">🔑 Update Credentials</button>
+                            </form>
+                        </div>
+
+                        <!-- Marks quick view / edit -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">📊 Marks</h3>
+                                <a id="marks-full-link" href="/admin/marks.html"
+                                    style="font-size:.8rem;color:var(--primary-light)">Full Editor →</a>
+                            </div>
+                            <div id="marks-preview"></div>
+                        </div>
+
+                        <!-- Danger Zone -->
+                        <div class="card" style="border-color:rgba(239,68,68,.3)">
+                            <h3 class="card-title" style="margin-bottom:.75rem;color:#f87171">🗑️ Danger Zone</h3>
+                            <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:.75rem">Permanently delete
+                                student and all their data (marks, attendance, fees, leave requests).</p>
+                            <button class="btn btn-danger w-full" onclick="deleteStudent()">🗑️ Delete Student</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Linked Parent Edit -->
+                <div class="card" style="margin-top:1.25rem" id="parent-card">
+                    <div class="card-header">
+                        <h3 class="card-title">👨‍👩‍👧 Linked Parent / Guardian</h3>
+                        <button class="btn btn-secondary btn-sm" onclick="saveParent()">💾 Save Parent</button>
+                    </div>
+                    <div id="parent-form-area"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/admin-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildAdminSidebar('students');
+        document.getElementById('topbar-container').innerHTML = buildAdminTopBar('Edit Student');
+
+        const sid = new URLSearchParams(location.search).get('id');
+        if (!sid) location.href = '/admin/students.html';
+
+        let studentData = null;
+        let parentId = null;
+
+        async function loadStudent() {
+            studentData = await api('GET', `/api/admin/students/${sid}`);
+            document.getElementById('page-heading').textContent = `Edit: ${studentData.name}`;
+            document.getElementById('s-name').value = studentData.name;
+            document.getElementById('s-dob').value = studentData.dob;
+            document.getElementById('s-class').value = studentData.class;
+            document.getElementById('s-section').value = studentData.section;
+            document.getElementById('s-parent').value = studentData.parent_id || '';
+            document.getElementById('c-current-id').value = studentData.student_id;
+            document.getElementById('marks-full-link').href = `/admin/marks.html?sid=${sid}`;
+
+            // Marks preview
+            const marks = await api('GET', `/api/admin/marks/${sid}`).catch(() => []);
+            const fa1 = marks.filter(m => m.exam_type === 'FA1');
+            document.getElementById('marks-preview').innerHTML = fa1.length ? fa1.map(m =>
+                `<div class="info-item"><span class="info-key">${m.subject}</span><span class="info-val">${m.marks_obtained}/${m.max_marks}</span></div>`
+            ).join('') : '<p style="color:var(--text-muted);font-size:.82rem">No marks yet.</p>';
+
+            // Parent section
+            parentId = studentData.parent_id;
+            if (parentId) {
+                const parents = await api('GET', '/api/admin/parents').catch(() => []);
+                const p = parents.find(pr => pr.parent_id === parentId);
+                if (p) renderParentForm(p);
+                else document.getElementById('parent-form-area').innerHTML = `<p style="color:var(--text-muted);font-size:.82rem">Linked parent ID "${parentId}" not found in database.</p>`;
+            } else {
+                document.getElementById('parent-form-area').innerHTML = `<p style="color:var(--text-muted);font-size:.82rem">No parent linked. Set a Parent ID above and save profile first.</p>`;
+            }
+        }
+
+        function renderParentForm(p) {
+            document.getElementById('parent-form-area').innerHTML = `
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Parent Name</label><input class="form-control" id="p-name" value="${p.name}"/></div>
+        <div class="form-group"><label class="form-label">Mobile</label><input class="form-control" id="p-mobile" value="${p.mobile}"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="p-email" value="${p.email || ''}"/></div>
+        <div class="form-group"><label class="form-label">Parent ID (login ID)</label><input class="form-control" id="p-id" value="${p.parent_id}" readonly style="opacity:.6"/></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Change Parent Password (leave blank to keep)</label>
+        <input class="form-control" id="p-pwd" type="text" placeholder="New password for parent"/>
+      </div>
+    `;
+        }
+
+        async function saveParent() {
+            if (!parentId) return showToast('No parent linked', 'error');
+            try {
+                await api('PUT', `/api/admin/parents/${parentId}`, {
+                    name: document.getElementById('p-name')?.value,
+                    mobile: document.getElementById('p-mobile')?.value,
+                    email: document.getElementById('p-email')?.value,
+                    student_id: sid
+                });
+                const pwd = document.getElementById('p-pwd')?.value;
+                if (pwd) {
+                    await api('PUT', `/api/admin/parents/${parentId}/credentials`, { new_password: pwd });
+                }
+                showToast('Parent details saved!', 'success');
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        document.getElementById('profile-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await api('PUT', `/api/admin/students/${sid}`, {
+                    name: document.getElementById('s-name').value,
+                    dob: document.getElementById('s-dob').value,
+                    class: document.getElementById('s-class').value,
+                    section: document.getElementById('s-section').value,
+                    parent_id: document.getElementById('s-parent').value || null
+                });
+                showToast('Student profile updated!', 'success');
+                await loadStudent();
+            } catch (e) { showToast(e.message, 'error'); }
+        });
+
+        document.getElementById('cred-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newId = document.getElementById('c-new-id').value.trim();
+            const newPwd = document.getElementById('c-new-pwd').value;
+            if (!newId && !newPwd) { showToast('Enter a new ID or new password', 'error'); return; }
+            try {
+                await api('PUT', `/api/admin/students/${studentData.student_id}/credentials`, { new_id: newId || null, new_password: newPwd || null });
+                showToast('Credentials updated!', 'success');
+                if (newId) { setTimeout(() => location.href = `/admin/student-edit.html?id=${newId}`, 1200); }
+                else await loadStudent();
+            } catch (e) { showToast(e.message, 'error'); }
+        });
+
+        async function deleteStudent() {
+            if (!confirm(`Are you sure you want to permanently delete ${studentData?.name}? This cannot be undone.`)) return;
+            try {
+                await api('DELETE', `/api/admin/students/${sid}`);
+                showToast('Student deleted', 'success');
+                setTimeout(() => location.href = '/admin/students.html', 1000);
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        (async () => {
+            await initAdminPage();
+            await loadStudent();
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>

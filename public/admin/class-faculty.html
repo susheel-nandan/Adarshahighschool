@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Class-Faculty — Admin Panel</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+
+                <div
+                    style="background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.18);border-radius:8px;padding:.6rem 1rem;font-size:.8rem;color:var(--text-secondary);margin-bottom:1rem">
+                    🔗 Assign faculty members to class sections. These assignments control the <strong>Faculty
+                        Directory</strong> view in the student and parent portals.
+                </div>
+
+                <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem">
+                    <select class="form-control" id="sel-class" style="width:auto" onchange="load()">
+                        <option value="6">Class 6</option>
+                        <option value="7">Class 7</option>
+                        <option value="8" selected>Class 8</option>
+                        <option value="9">Class 9</option>
+                        <option value="10">Class 10</option>
+                    </select>
+                    <select class="form-control" id="sel-section" style="width:auto" onchange="load()">
+                        <option>A</option>
+                        <option>B</option>
+                        <option>C</option>
+                    </select>
+                    <button class="btn btn-success btn-sm" onclick="openAdd()">➕ Assign Faculty</button>
+                    <div id="count" style="font-size:.82rem;color:var(--text-muted);margin-left:auto"></div>
+                </div>
+
+                <div class="card">
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Faculty Name</th>
+                                    <th>Subject</th>
+                                    <th>Class Teacher?</th>
+                                    <th>Remove</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Subject management for this class -->
+                <div class="card" style="margin-top:1.25rem">
+                    <div class="card-header">
+                        <h3 class="card-title">📚 Subjects for Selected Class</h3>
+                        <button class="btn btn-success btn-sm" onclick="openAddSubject()">➕ Add Subject</button>
+                    </div>
+                    <div id="subjects-list"
+                        style="display:flex;flex-wrap:wrap;gap:.5rem;padding:.5rem 0;min-height:40px"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign modal -->
+    <div class="modal-overlay" id="assign-modal">
+        <div class="modal" style="max-width:420px">
+            <div class="modal-header">
+                <h3 style="font-size:1rem;font-weight:700">Assign Faculty to Class</h3>
+                <button class="modal-close"
+                    onclick="document.getElementById('assign-modal').classList.remove('open')">✕</button>
+            </div>
+            <form id="assign-form">
+                <div class="form-group"><label class="form-label">Faculty *</label><select class="form-control"
+                        id="af-faculty" required></select></div>
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+                        <input type="checkbox" id="af-ct" /> <span>Set as Class Teacher</span>
+                    </label>
+                    <div style="font-size:.74rem;color:var(--text-muted);margin-top:.25rem">Only one class teacher per
+                        class/section allowed.</div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.5rem">
+                    <button type="button" class="btn btn-secondary"
+                        onclick="document.getElementById('assign-modal').classList.remove('open')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Assign</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add subject modal -->
+    <div class="modal-overlay" id="subject-modal">
+        <div class="modal" style="max-width:380px">
+            <div class="modal-header">
+                <h3 style="font-size:1rem;font-weight:700">Add Subject</h3>
+                <button class="modal-close"
+                    onclick="document.getElementById('subject-modal').classList.remove('open')">✕</button>
+            </div>
+            <form id="subject-form">
+                <div class="form-group"><label class="form-label">Subject Name *</label><input class="form-control"
+                        id="subj-name" required placeholder="e.g. Computer Science" /></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.5rem">
+                    <button type="button" class="btn btn-secondary"
+                        onclick="document.getElementById('subject-modal').classList.remove('open')">Cancel</button>
+                    <button type="submit" class="btn btn-success">Add Subject</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/admin-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildAdminSidebar('class-faculty');
+        document.getElementById('topbar-container').innerHTML = buildAdminTopBar('Class-Faculty Assignments');
+
+        let allFaculty = [], assignments = [], classSubjects = [];
+
+        function cls() { return document.getElementById('sel-class').value; }
+        function sec() { return document.getElementById('sel-section').value; }
+
+        async function load() {
+            [assignments, classSubjects] = await Promise.all([
+                api('GET', `/api/admin/class-faculty?class=${cls()}&section=${sec()}`),
+                api('GET', `/api/admin/subjects?class=${cls()}`)
+            ]);
+            render();
+            renderSubjects();
+        }
+
+        function render() {
+            document.getElementById('count').textContent = `${assignments.length} faculty assigned`;
+            document.getElementById('tbody').innerHTML = assignments.map(a => `<tr>
+      <td><strong>${a.faculty_name}</strong></td>
+      <td style="font-size:.85rem">${a.faculty_subject}</td>
+      <td>${a.is_class_teacher ? '<span class="badge badge-success">✅ Class Teacher</span>' : '<span style="color:var(--text-muted);font-size:.8rem">—</span>'}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="remove(${a.faculty_id})">🗑️ Remove</button></td>
+    </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:2rem">No faculty assigned yet.</td></tr>';
+        }
+
+        function renderSubjects() {
+            document.getElementById('subjects-list').innerHTML = classSubjects.map(s =>
+                `<div style="background:rgba(37,99,235,.1);border:1px solid rgba(37,99,235,.2);border-radius:20px;padding:.3rem .8rem;font-size:.8rem;display:flex;align-items:center;gap:.4rem">
+        ${s.name}
+        <button onclick="deleteSubject(${s.id})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:.85rem;padding:0;line-height:1">✕</button>
+      </div>`
+            ).join('') || '<span style="color:var(--text-muted);font-size:.82rem">No subjects yet.</span>';
+        }
+
+        function openAdd() {
+            document.getElementById('af-faculty').innerHTML = allFaculty.map(f => `<option value="${f.id}">${f.name} (${f.subject})</option>`).join('');
+            document.getElementById('af-ct').checked = false;
+            document.getElementById('assign-modal').classList.add('open');
+        }
+
+        document.getElementById('assign-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            try {
+                await api('POST', '/api/admin/class-faculty', {
+                    student_class: cls(), student_section: sec(),
+                    faculty_id: document.getElementById('af-faculty').value,
+                    is_class_teacher: document.getElementById('af-ct').checked ? 1 : 0
+                });
+                showToast('Faculty assigned!', 'success');
+                document.getElementById('assign-modal').classList.remove('open');
+                load();
+            } catch (err) { showToast(err.message, 'error'); }
+        });
+
+        async function remove(facultyId) {
+            if (!confirm('Remove this faculty assignment?')) return;
+            await api('DELETE', '/api/admin/class-faculty', { student_class: cls(), student_section: sec(), faculty_id: facultyId });
+            showToast('Removed', 'success'); load();
+        }
+
+        function openAddSubject() { document.getElementById('subj-name').value = ''; document.getElementById('subject-modal').classList.add('open'); }
+
+        document.getElementById('subject-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            try {
+                await api('POST', '/api/admin/subjects', { name: document.getElementById('subj-name').value.trim(), class: cls() });
+                showToast('Subject added!', 'success'); document.getElementById('subject-modal').classList.remove('open'); load();
+            } catch (err) { showToast(err.message, 'error'); }
+        });
+
+        async function deleteSubject(id) {
+            if (!confirm('Delete this subject? This will also remove related marks, timetable entries, and exam schedules.')) return;
+            await api('DELETE', `/api/admin/subjects/${id}`);
+            showToast('Subject deleted', 'success'); load();
+        }
+
+        (async () => {
+            await initAdminPage();
+            allFaculty = await api('GET', '/api/admin/faculty');
+            await load();
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>

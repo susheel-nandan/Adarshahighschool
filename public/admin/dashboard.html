@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Admin Dashboard — Adarsha School</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+
+                <div class="card"
+                    style="margin-bottom:1.25rem;background:linear-gradient(135deg,rgba(239,68,68,.12),rgba(37,99,235,.08));border-color:rgba(239,68,68,.3)">
+                    <div style="display:flex;align-items:center;gap:1rem">
+                        <span style="font-size:2.5rem">🔧</span>
+                        <div>
+                            <div style="font-family:'Outfit';font-size:1.3rem;font-weight:700">Welcome, Administrator
+                            </div>
+                            <div style="color:var(--text-secondary);font-size:.85rem">Full control over all school data,
+                                accounts, and settings.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-grid" id="stat-grid">
+                    <div class="stat-card skeleton" style="height:90px"></div>
+                    <div class="stat-card skeleton" style="height:90px"></div>
+                    <div class="stat-card skeleton" style="height:90px"></div>
+                    <div class="stat-card skeleton" style="height:90px"></div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card" style="margin-top:1.25rem">
+                    <h3 class="card-title" style="margin-bottom:1rem">⚡ Quick Actions</h3>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem">
+                        <a href="/admin/students.html"><button class="btn btn-primary w-full">🎒 Manage
+                                Students</button></a>
+                        <a href="/admin/parents.html"><button class="btn btn-secondary w-full">👨‍👩‍👧 Manage
+                                Parents</button></a>
+                        <a href="/admin/timetable.html"><button class="btn btn-secondary w-full">📅 Edit
+                                Timetable</button></a>
+                        <a href="/admin/marks.html"><button class="btn btn-secondary w-full">📊 Edit Marks</button></a>
+                        <a href="/admin/attendance.html"><button class="btn btn-secondary w-full">✅
+                                Attendance</button></a>
+                        <a href="/admin/faculty.html"><button class="btn btn-secondary w-full">👩‍🏫
+                                Faculty</button></a>
+                        <a href="/admin/leave.html"><button class="btn btn-secondary w-full">📋 Leave
+                                Requests</button></a>
+                    </div>
+                </div>
+
+                <!-- Class overview -->
+                <div class="card" style="margin-top:1.25rem">
+                    <h3 class="card-title" style="margin-bottom:1rem">🏫 Classes Overview</h3>
+                    <div id="class-list" style="display:flex;flex-wrap:wrap;gap:.5rem"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/admin-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildAdminSidebar('dashboard');
+        document.getElementById('topbar-container').innerHTML = buildAdminTopBar('Admin Dashboard');
+
+        (async () => {
+            await initAdminPage();
+            const stats = await api('GET', '/api/admin/stats');
+            document.getElementById('stat-grid').innerHTML = `
+      <div class="stat-card" style="--stat-color:var(--primary);--stat-icon-bg:rgba(37,99,235,.15)">
+        <div class="stat-icon">🎒</div>
+        <div class="stat-info"><div class="stat-value">${stats.students}</div><div class="stat-label">Total Students</div></div>
+      </div>
+      <div class="stat-card" style="--stat-color:var(--teal);--stat-icon-bg:rgba(13,148,136,.15)">
+        <div class="stat-icon">👨‍👩‍👧</div>
+        <div class="stat-info"><div class="stat-value">${stats.parents}</div><div class="stat-label">Total Parents</div></div>
+      </div>
+      <div class="stat-card" style="--stat-color:var(--success);--stat-icon-bg:rgba(16,185,129,.15)">
+        <div class="stat-icon">👩‍🏫</div>
+        <div class="stat-info"><div class="stat-value">${stats.faculty}</div><div class="stat-label">Faculty Members</div></div>
+      </div>
+      <div class="stat-card" style="--stat-color:var(--warning);--stat-icon-bg:rgba(245,158,11,.15)">
+        <div class="stat-icon">📋</div>
+        <div class="stat-info"><div class="stat-value">${stats.pendingLeave}</div><div class="stat-label">Pending Leave Requests</div></div>
+      </div>
+    `;
+            document.getElementById('class-list').innerHTML = stats.classes.map(c =>
+                `<a href="/admin/students.html?class=${c.class}&section=${c.section}"><span style="background:rgba(37,99,235,.1);border:1px solid rgba(37,99,235,.25);border-radius:20px;padding:.3rem .9rem;font-size:.82rem;cursor:pointer;display:inline-block;font-weight:600">Class ${c.class}-${c.section}</span></a>`
+            ).join('');
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>

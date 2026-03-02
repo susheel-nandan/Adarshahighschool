@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>My Profile — Admin Panel</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <style>
+        .profile-header {
+            background: linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%);
+            border-radius: 14px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profile-header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .profile-avatar-lg {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, .2);
+            border: 3px solid rgba(255, 255, 255, .4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 800;
+            color: #fff;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .profile-info-hero {
+            color: #fff;
+            position: relative;
+        }
+
+        .profile-info-hero h2 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin: 0 0 .2rem;
+        }
+
+        .profile-info-hero p {
+            font-size: .85rem;
+            opacity: .75;
+            margin: 0;
+        }
+
+        .section-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .section-title {
+            font-size: .75rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .info-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: .65rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-size: .82rem;
+            color: var(--text-muted);
+        }
+
+        .info-value {
+            font-size: .9rem;
+            font-weight: 600;
+            font-family: monospace;
+        }
+
+        .warning-box {
+            background: rgba(245, 158, 11, .1);
+            border: 1px solid rgba(245, 158, 11, .25);
+            border-radius: 8px;
+            padding: .65rem 1rem;
+            font-size: .8rem;
+            color: var(--accent-light);
+            margin-bottom: 1rem;
+            display: flex;
+            gap: .5rem;
+            align-items: flex-start;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade" style="max-width:680px">
+
+                <!-- Profile header -->
+                <div class="profile-header">
+                    <div class="profile-avatar-lg" id="avatar-lg">A</div>
+                    <div class="profile-info-hero">
+                        <h2 id="hero-name">Administrator</h2>
+                        <p>Admin ID: <span id="hero-id" style="font-family:monospace;font-weight:700">—</span></p>
+                        <p style="margin-top:.3rem">🔒 School Administrator · Full Access</p>
+                    </div>
+                </div>
+
+                <!-- Current info -->
+                <div class="section-card">
+                    <div class="section-title">Current Credentials</div>
+                    <div class="info-row">
+                        <span class="info-label">Admin ID</span>
+                        <span class="info-value" id="current-id">—</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Password</span>
+                        <span class="info-value">••••••••</span>
+                    </div>
+                </div>
+
+                <!-- Change ID -->
+                <div class="section-card">
+                    <div class="section-title">🪪 Change Admin ID</div>
+                    <div class="warning-box">
+                        ⚠️ After changing your Admin ID, you will need to use the new ID to log in next time. Your
+                        current session stays active.
+                    </div>
+                    <form id="id-form">
+                        <div class="form-group">
+                            <label class="form-label">New Admin ID *</label>
+                            <input class="form-control" id="new-id" placeholder="e.g. ADMIN002" required />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Current Password (to confirm) *</label>
+                            <div style="position:relative">
+                                <input class="form-control" id="id-pwd" type="password"
+                                    placeholder="Enter your current password" required style="padding-right:3rem" />
+                                <button type="button" onclick="togglePwd('id-pwd')"
+                                    style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer">👁</button>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="id-btn">Update Admin ID</button>
+                    </form>
+                </div>
+
+                <!-- Change password -->
+                <div class="section-card">
+                    <div class="section-title">🔑 Change Password</div>
+                    <form id="pwd-form">
+                        <div class="form-group">
+                            <label class="form-label">Current Password *</label>
+                            <div style="position:relative">
+                                <input class="form-control" id="cur-pwd" type="password"
+                                    placeholder="Enter current password" required style="padding-right:3rem" />
+                                <button type="button" onclick="togglePwd('cur-pwd')"
+                                    style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer">👁</button>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">New Password *</label>
+                                <input class="form-control" id="new-pwd" type="password" placeholder="Min 6 characters"
+                                    required />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Confirm New Password *</label>
+                                <input class="form-control" id="confirm-pwd" type="password"
+                                    placeholder="Repeat new password" required />
+                            </div>
+                        </div>
+                        <div id="pwd-strength" style="font-size:.75rem;margin-top:-.25rem;margin-bottom:.75rem"></div>
+                        <button type="submit" class="btn btn-success" id="pwd-btn">Update Password</button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/admin-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildAdminSidebar('profile');
+        document.getElementById('topbar-container').innerHTML = buildAdminTopBar('My Profile');
+
+        function togglePwd(id) {
+            const inp = document.getElementById(id);
+            inp.type = inp.type === 'password' ? 'text' : 'password';
+        }
+
+        // Password strength indicator
+        document.getElementById('new-pwd').addEventListener('input', function () {
+            const v = this.value;
+            const el = document.getElementById('pwd-strength');
+            if (!v) { el.textContent = ''; return; }
+            if (v.length < 6) { el.innerHTML = '<span style="color:var(--danger)">⚠️ Too short (min 6 chars)</span>'; return; }
+            const score = [/[A-Z]/, /[0-9]/, /[^A-Za-z0-9]/].filter(r => r.test(v)).length;
+            const levels = [
+                { label: 'Weak', color: 'var(--danger)' },
+                { label: 'Fair', color: 'var(--warning)' },
+                { label: 'Strong 💪', color: 'var(--success)' },
+                { label: 'Very Strong 🔒', color: 'var(--teal)' },
+            ];
+            const l = levels[score];
+            el.innerHTML = `<span style="color:${l.color}">● Strength: ${l.label}</span>`;
+        });
+
+        async function loadProfile() {
+            const admin = await api('GET', '/api/admin/profile');
+            document.getElementById('current-id').textContent = admin.admin_id;
+            document.getElementById('hero-id').textContent = admin.admin_id;
+            document.getElementById('hero-name').textContent = admin.name || 'Administrator';
+            const initial = (admin.name || admin.admin_id)[0].toUpperCase();
+            document.getElementById('avatar-lg').textContent = initial;
+            document.getElementById('new-id').placeholder = `e.g. NEW_${admin.admin_id}`;
+        }
+
+        // Change ID
+        document.getElementById('id-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            const newId = document.getElementById('new-id').value.trim();
+            const pwd = document.getElementById('id-pwd').value;
+            if (!newId) { showToast('Enter a new Admin ID', 'error'); return; }
+            const btn = document.getElementById('id-btn');
+            btn.textContent = 'Updating...'; btn.disabled = true;
+            try {
+                const res = await api('PUT', '/api/admin/profile', { current_password: pwd, new_id: newId });
+                showToast(`✅ Admin ID changed to "${res.new_id}"`, 'success');
+                document.getElementById('id-form').reset();
+                await loadProfile();
+            } catch (err) { showToast(err.message, 'error'); }
+            finally { btn.textContent = 'Update Admin ID'; btn.disabled = false; }
+        });
+
+        // Change password
+        document.getElementById('pwd-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            const cur = document.getElementById('cur-pwd').value;
+            const np = document.getElementById('new-pwd').value;
+            const conf = document.getElementById('confirm-pwd').value;
+            if (np !== conf) { showToast('New passwords do not match', 'error'); return; }
+            if (np.length < 6) { showToast('Password must be at least 6 characters', 'error'); return; }
+            const btn = document.getElementById('pwd-btn');
+            btn.textContent = 'Updating...'; btn.disabled = true;
+            try {
+                await api('PUT', '/api/admin/profile', { current_password: cur, new_password: np });
+                showToast('✅ Password updated successfully!', 'success');
+                document.getElementById('pwd-form').reset();
+                document.getElementById('pwd-strength').textContent = '';
+            } catch (err) { showToast(err.message, 'error'); }
+            finally { btn.textContent = 'Update Password'; btn.disabled = false; }
+        });
+
+        (async () => {
+            await initAdminPage();
+            await loadProfile();
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>

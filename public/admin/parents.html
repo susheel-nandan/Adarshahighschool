@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Parents — Admin Panel</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+                <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem">
+                    <input class="form-control" id="search" type="text" placeholder="🔍 Search name or ID..."
+                        oninput="filter()" style="max-width:280px" />
+                    <button class="btn btn-success btn-sm"
+                        onclick="document.getElementById('add-modal').classList.add('open')">➕ Add Parent</button>
+                    <div id="pcount" style="font-size:.82rem;color:var(--text-muted);margin-left:auto"></div>
+                </div>
+                <div class="card">
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Parent ID</th>
+                                    <th>Name</th>
+                                    <th>Mobile</th>
+                                    <th>Linked Student</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal-overlay" id="edit-modal">
+        <div class="modal" style="max-width:500px">
+            <div class="modal-header">
+                <h3 style="font-size:1rem;font-weight:700">✏️ Edit Parent</h3>
+                <button class="modal-close" onclick="closeEdit()">✕</button>
+            </div>
+            <form id="edit-form">
+                <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control"
+                        id="e-name" required /></div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Mobile *</label><input class="form-control"
+                            id="e-mobile" required /></div>
+                    <div class="form-group"><label class="form-label">Email</label><input class="form-control"
+                            id="e-email" type="email" /></div>
+                </div>
+                <div class="form-group"><label class="form-label">Linked Student ID</label><input class="form-control"
+                        id="e-student" placeholder="e.g. STU2024001" /></div>
+                <hr style="border-color:var(--border);margin:.75rem 0" />
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Change Login ID (optional)</label><input
+                            class="form-control" id="e-new-id" placeholder="Leave blank to keep same" /></div>
+                    <div class="form-group"><label class="form-label">Change Password (optional)</label><input
+                            class="form-control" id="e-new-pwd" placeholder="Leave blank to keep same" /></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.5rem">
+                    <button type="button" class="btn btn-secondary" onclick="closeEdit()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Modal -->
+    <div class="modal-overlay" id="add-modal">
+        <div class="modal" style="max-width:500px">
+            <div class="modal-header">
+                <h3 style="font-size:1rem;font-weight:700">➕ Add Parent</h3>
+                <button class="modal-close"
+                    onclick="document.getElementById('add-modal').classList.remove('open')">✕</button>
+            </div>
+            <form id="add-form">
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control"
+                            id="a-name" required /></div>
+                    <div class="form-group"><label class="form-label">Parent ID *</label><input class="form-control"
+                            id="a-id" placeholder="e.g. PAR006" required /></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Mobile *</label><input class="form-control"
+                            id="a-mobile" required /></div>
+                    <div class="form-group"><label class="form-label">Email</label><input class="form-control"
+                            id="a-email" type="email" /></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Linked Student ID</label><input
+                            class="form-control" id="a-student" placeholder="e.g. STU2024001" /></div>
+                    <div class="form-group"><label class="form-label">Password *</label><input class="form-control"
+                            id="a-pwd" required /></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.5rem">
+                    <button type="button" class="btn btn-secondary"
+                        onclick="document.getElementById('add-modal').classList.remove('open')">Cancel</button>
+                    <button type="submit" class="btn btn-success">Create Parent</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/admin-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildAdminSidebar('parents');
+        document.getElementById('topbar-container').innerHTML = buildAdminTopBar('Manage Parents');
+        let all = [], editPid = '';
+
+        function render(list) {
+            document.getElementById('pcount').textContent = `${list.length} parent(s)`;
+            document.getElementById('tbody').innerHTML = list.map(p => `
+      <tr>
+        <td style="font-family:monospace;font-size:.82rem">${p.parent_id}</td>
+        <td><strong>${p.name}</strong></td>
+        <td>${p.mobile}</td>
+        <td>${p.student_name ? `${p.student_name} (Class ${p.student_class}${p.student_section})` : '<span style="color:var(--text-muted)">—</span>'}</td>
+        <td><button class="btn btn-primary btn-sm" onclick="openEdit('${p.parent_id}')">✏️ Edit</button></td>
+      </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:2rem">No parents found.</td></tr>';
+        }
+        function filter() { const q = document.getElementById('search').value.toLowerCase(); render(all.filter(p => !q || p.name.toLowerCase().includes(q) || p.parent_id.toLowerCase().includes(q))); }
+        function openEdit(pid) {
+            editPid = pid; const p = all.find(x => x.parent_id === pid);
+            document.getElementById('e-name').value = p.name; document.getElementById('e-mobile').value = p.mobile;
+            document.getElementById('e-email').value = p.email || ''; document.getElementById('e-student').value = p.student_id || '';
+            document.getElementById('e-new-id').value = ''; document.getElementById('e-new-pwd').value = '';
+            document.getElementById('edit-modal').classList.add('open');
+        }
+        function closeEdit() { document.getElementById('edit-modal').classList.remove('open'); }
+        document.getElementById('edit-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            try {
+                await api('PUT', `/api/admin/parents/${editPid}`, { name: document.getElementById('e-name').value, mobile: document.getElementById('e-mobile').value, email: document.getElementById('e-email').value, student_id: document.getElementById('e-student').value || null });
+                const nid = document.getElementById('e-new-id').value.trim(), npwd = document.getElementById('e-new-pwd').value;
+                if (nid || npwd) await api('PUT', `/api/admin/parents/${editPid}/credentials`, { new_id: nid || null, new_password: npwd || null });
+                showToast('Parent updated!', 'success'); closeEdit(); load();
+            } catch (err) { showToast(err.message, 'error'); }
+        });
+        document.getElementById('add-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            try {
+                await api('POST', '/api/admin/parents', { name: document.getElementById('a-name').value, parent_id: document.getElementById('a-id').value, mobile: document.getElementById('a-mobile').value, email: document.getElementById('a-email').value, student_id: document.getElementById('a-student').value || null, password: document.getElementById('a-pwd').value });
+                showToast('Parent created!', 'success'); document.getElementById('add-modal').classList.remove('open'); document.getElementById('add-form').reset(); load();
+            } catch (err) { showToast(err.message, 'error'); }
+        });
+        async function load() { all = await api('GET', '/api/admin/parents'); filter(); }
+        (async () => { await initAdminPage(); await load(); hideLoader(); })();
+    </script>
+</body>
+
+</html>

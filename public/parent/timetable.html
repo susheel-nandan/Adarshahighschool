@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Timetable — Parent Portal</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <style>
+        .tt-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 700px
+        }
+
+        .tt-table th,
+        .tt-table td {
+            border: 1px solid var(--border);
+            padding: .6rem .5rem;
+            font-size: .78rem;
+            vertical-align: top;
+            min-width: 100px
+        }
+
+        .tt-table th {
+            background: rgba(37, 99, 235, .12);
+            text-align: center;
+            font-size: .7rem;
+            font-weight: 700;
+            text-transform: uppercase
+        }
+
+        .tt-table .period-col {
+            background: rgba(255, 255, 255, .03);
+            text-align: center;
+            font-weight: 700;
+            font-size: .7rem;
+            color: var(--text-secondary);
+            width: 70px
+        }
+
+        .tt-slot.filled {
+            background: rgba(245, 158, 11, .1);
+            border-radius: 6px;
+            padding: .35rem .4rem
+        }
+
+        .tt-slot.break-slot {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: .72rem;
+            padding: .35rem
+        }
+    </style>
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+                <div
+                    style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:.6rem 1rem;font-size:.8rem;color:var(--text-secondary);margin-bottom:1rem">
+                    👁 Read-Only: This is your child's class timetable.
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📅 Weekly Class Timetable</h3>
+                        <div id="class-label" style="font-size:.82rem;color:var(--text-muted)"></div>
+                    </div>
+                    <div style="overflow-x:auto">
+                        <table class="tt-table">
+                            <thead>
+                                <tr id="tt-head"></tr>
+                            </thead>
+                            <tbody id="tt-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/js/utils.js"></script>
+    <script src="/js/parent-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildParentSidebar('timetable');
+        document.getElementById('topbar-container').innerHTML = buildParentTopBar('Child\'s Timetable');
+        (async () => {
+            const data = await initParentPage();
+            if (data?.student) document.getElementById('class-label').textContent = `Class ${data.student.class}${data.student.section}`;
+            const rows = await api('GET', '/api/parent/timetable');
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const staticTimeMap = {
+                1: '08:10 – 08:50', 2: '08:50 – 09:30', 3: '09:30 – 10:10',
+                4: '10:20 – 11:00', 5: '11:00 – 11:40', 6: '11:40 – 12:20',
+                7: '13:00 – 13:40', 8: '13:40 – 14:20', 9: '14:20 – 15:00',
+                10: '15:10 – 15:50', 11: '15:50 – 16:30'
+            };
+            const timeMap = {};
+            const map = {};
+            days.forEach(d => { map[d] = {}; });
+            rows.forEach(r => { map[r.day][r.period] = r; timeMap[r.period] = r.start_time + ' – ' + r.end_time; });
+            document.getElementById('tt-head').innerHTML = '<th class="period-col">Period</th>' + days.map(d => `<th>${d}</th>`).join('');
+            let html = `<tr><td class="period-col" style="font-size:.65rem">🙏 Prayer<br/>08:05–08:10</td>${days.map(() => '<td><div class="tt-slot break-slot">PRAYER</div></td>').join('')}</tr>`;
+            for (let p = 1; p <= 11; p++) {
+                if (p === 4) html += `<tr><td class="period-col" style="font-size:.65rem">☕ Break<br/>10:10–10:20</td>${days.map(() => '<td><div class="tt-slot break-slot">SHORT BREAK</div></td>').join('')}</tr>`;
+                if (p === 7) html += `<tr><td class="period-col" style="font-size:.65rem">🍽️ Lunch<br/>12:20–13:00</td>${days.map(() => '<td><div class="tt-slot break-slot">LUNCH BREAK</div></td>').join('')}</tr>`;
+                if (p === 10) html += `<tr><td class="period-col" style="font-size:.65rem">☕ Break<br/>15:00–15:10</td>${days.map(() => '<td><div class="tt-slot break-slot">SHORT BREAK</div></td>').join('')}</tr>`;
+                html += '<tr>';
+                html += `<td class="period-col">P${p}<br/><span style="font-size:.65rem;color:var(--text-muted)">${timeMap[p] || staticTimeMap[p]}</span></td>`;
+                days.forEach(d => {
+                    const cell = map[d][p];
+                    html += cell ? `<td><div class="tt-slot filled"><div style="font-weight:600;font-size:.8rem">${cell.subject}</div><div style="font-size:.68rem;color:var(--text-muted)">${cell.faculty}</div></div></td>`
+                        : '<td><div class="tt-slot break-slot">—</div></td>';
+                });
+                html += '</tr>';
+            }
+            document.getElementById('tt-body').innerHTML = html;
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>
