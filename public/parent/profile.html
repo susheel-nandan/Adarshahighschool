@@ -20,12 +20,13 @@
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start">
                     <!-- Parent Profile -->
                     <div class="card">
-                        <div style="text-align:center;margin-bottom:1.5rem">
+                        <div style="display:flex;align-items:center;gap:1.25rem;margin-bottom:1.5rem">
                             <div id="p-avatar"
-                                style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--primary));display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:700;margin:0 auto .75rem;box-shadow:0 4px 20px rgba(245,158,11,.3)">
+                                style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--primary));display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:700;box-shadow:0 4px 20px rgba(245,158,11,.3);overflow:hidden;flex-shrink:0">
                                 ?</div>
-                            <div id="p-name" style="font-family:'Outfit';font-size:1.2rem;font-weight:700"></div>
-                            <div style="color:var(--accent-light);font-size:.82rem;font-weight:600">Parent / Guardian
+                            <div>
+                                <div id="p-name" style="font-family:'Outfit';font-size:1.2rem;font-weight:700"></div>
+                                <div style="color:var(--accent-light);font-size:.82rem;font-weight:600">Parent / Guardian</div>
                             </div>
                         </div>
                         <div class="info-list" id="parent-info"></div>
@@ -62,6 +63,8 @@
                                 </div>
                             </div>
                         </div>
+
+
 
                         <div class="card">
                             <h3 class="card-title" style="margin-bottom:1rem">🔑 Change Password</h3>
@@ -133,7 +136,12 @@
             const { parent, student } = data;
             parentId = parent.parent_id;
 
-            document.getElementById('p-avatar').textContent = (parent.name || 'P')[0];
+            const pAvatar = document.getElementById('p-avatar');
+            if (student && student.photo_url) {
+                pAvatar.innerHTML = `<img src="${student.photo_url}" alt="Profile Photo" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`;
+            } else {
+                pAvatar.textContent = (parent.name || 'P')[0];
+            }
             document.getElementById('p-name').textContent = parent.name;
 
             document.getElementById('parent-info').innerHTML = [

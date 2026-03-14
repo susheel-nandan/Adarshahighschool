@@ -54,7 +54,8 @@
 
                 <!-- ── Filter bar ─────────────────────────────────────── -->
                 <div class="card" style="margin-bottom:1.25rem">
-                    <div class="card-title" style="margin-bottom:1rem">🔍 Select Class, Subject & Exam</div>
+                    <div class="card-title" style="margin-bottom:1rem; color:white;">🔍 Select Class, Subject & Exam
+                    </div>
                     <div style="display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap">
 
                         <div class="form-group" style="margin:0;min-width:110px">
@@ -63,7 +64,7 @@
                                 style="padding:.45rem .6rem">
                                 <option value="6">Class 6</option>
                                 <option value="7">Class 7</option>
-                                <option value="8" selected>Class 8</option>
+                                <option value="8">Class 8</option>
                                 <option value="9">Class 9</option>
                                 <option value="10">Class 10</option>
                             </select>
@@ -74,7 +75,16 @@
                             <select class="form-control" id="sel-section" style="padding:.45rem .6rem">
                                 <option>A</option>
                                 <option>B</option>
-                                <option>C</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin:0;min-width:130px">
+                            <label class="form-label" style="font-size:.72rem">Subject Type</label>
+                            <select class="form-control" id="sel-subject-type" onchange="onSubjectTypeChange()"
+                                style="padding:.45rem .6rem">
+                                <option value="General">General Subjects</option>
+                                <option value="IIT">IIT Subjects</option>
+                                <option value="All">All Subjects</option>
                             </select>
                         </div>
 
@@ -91,8 +101,9 @@
                                 <option value="FA1">FA1</option>
                                 <option value="FA2">FA2</option>
                                 <option value="SA1">SA1</option>
+                                <option value="FA3">FA3</option>
+                                <option value="FA4">FA4</option>
                                 <option value="SA2">SA2</option>
-                                <option value="Annual">Annual</option>
                             </select>
                         </div>
 
@@ -165,6 +176,7 @@
 
         let currentSubjectId = null;
         let currentStudents = [];
+        let allSubjects = []; // Hold all fetched subjects for filtering
 
         // ── Grade helper ─────────────────────────────────────────────────
         function gradeFor(pct) {
@@ -179,10 +191,52 @@
         // ── When class changes — reload subject dropdown ──────────────────
         async function onClassChange() {
             const cls = document.getElementById('sel-class').value;
-            const subjects = await api('GET', `/api/admin/subjects?class=${cls}`).catch(() => []);
+            allSubjects = await api('GET', `/api/admin/subjects?class=${cls}`).catch(() => []);
+            onSubjectTypeChange();
+        }
+
+        function onSubjectTypeChange() {
+            const type = document.getElementById('sel-subject-type').value;
             const sel = document.getElementById('sel-subject');
-            sel.innerHTML = subjects.length
-                ? subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('')
+            const examSel = document.getElementById('sel-exam');
+
+            let filtered = allSubjects;
+            if (type === 'IIT') {
+                filtered = allSubjects.filter(s => s.name.toUpperCase().startsWith('IIT'));
+                examSel.innerHTML = `
+                    <option value="test1">test1</option>
+                    <option value="test2">test2</option>
+                    <option value="test3">test3</option>
+                    <option value="test4">test4</option>
+                    <option value="test5">test5</option>
+                    <option value="test6">test6</option>
+                `;
+            } else if (type === 'General') {
+                filtered = allSubjects.filter(s => !s.name.toUpperCase().startsWith('IIT'));
+                examSel.innerHTML = `
+                    <option value="FA1">FA1</option>
+                    <option value="FA2">FA2</option>
+                    <option value="SA1">SA1</option>
+                    <option value="FA3">FA3</option>
+                    <option value="FA4">FA4</option>
+                    <option value="SA2">SA2</option>
+                `;
+            } else {
+                examSel.innerHTML = `
+                    <option value="test1">test1</option>
+                    <option value="test2">test2</option>
+                    <option value="test3">test3</option>
+                    <option value="FA1">FA1</option>
+                    <option value="FA2">FA2</option>
+                    <option value="SA1">SA1</option>
+                    <option value="FA3">FA3</option>
+                    <option value="FA4">FA4</option>
+                    <option value="SA2">SA2</option>
+                `;
+            }
+
+            sel.innerHTML = filtered.length
+                ? filtered.map(s => `<option value="${s.id}">${s.name}</option>`).join('')
                 : '<option value="">No subjects found</option>';
         }
 

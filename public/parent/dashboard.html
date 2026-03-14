@@ -22,10 +22,11 @@
                     style="margin-bottom:1.25rem;background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(37,99,235,.1));border-color:rgba(245,158,11,.25)"
                     id="child-banner">
                     <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">
-                        <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--primary));display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;flex-shrink:0"
+                        <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--primary));display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;flex-shrink:0;overflow:hidden"
                             id="child-avatar">?</div>
                         <div>
-                            <div style="font-family:'Outfit';font-size:1.2rem;font-weight:700" id="child-name">—</div>
+                            <div style="font-family:'Outfit';font-size:1.2rem;font-weight:700;color:var(--text-primary)"
+                                id="child-name">—</div>
                             <div id="child-class" style="color:var(--text-secondary);font-size:.85rem"></div>
                         </div>
                         <div style="margin-left:auto">
@@ -94,7 +95,12 @@
             if (!data) return;
             const { parent, student } = data;
 
-            document.getElementById('child-avatar').textContent = (student?.name || 'S')[0];
+            const childAv = document.getElementById('child-avatar');
+            if (student && student.photo_url) {
+                childAv.innerHTML = `<img src="${student.photo_url}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`;
+            } else {
+                childAv.textContent = (student?.name || 'S')[0];
+            }
             document.getElementById('child-name').textContent = student?.name || 'No student linked';
             document.getElementById('child-class').textContent = student ? `Class ${student.class}${student.section} • ID: ${student.student_id}` : '';
 

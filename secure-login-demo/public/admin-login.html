@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Adarsha High School</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <div class="login-container admin-theme">
+        <h2>Admin Login</h2>
+        <form id="adminLoginForm">
+            <div class="input-group">
+                <label for="username">Admin Username</label>
+                <input type="text" id="username" name="username" required placeholder="Enter Admin Username">
+            </div>
+            <div class="input-group">
+                <label for="password">Admin Password</label>
+                <input type="password" id="password" name="password" required placeholder="Enter Admin Password">
+            </div>
+            <div id="errorMessage" class="error-message"></div>
+            <button type="submit" class="btn btn-admin">Secure Login</button>
+        </form>
+    </div>
+
+    <script src="/js/admin-auth.js"></script>
+</body>
+
+</html>

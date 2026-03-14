@@ -20,12 +20,13 @@
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start">
                     <!-- Profile -->
                     <div class="card">
-                        <div style="text-align:center;margin-bottom:1.5rem">
+                        <div style="display:flex;align-items:center;gap:1.25rem;margin-bottom:1.5rem">
                             <div id="profile-avatar"
-                                style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--teal));display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;margin:0 auto .75rem;box-shadow:0 4px 20px rgba(37,99,235,.3)">
+                                style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--teal));display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;box-shadow:0 4px 20px rgba(37,99,235,.3);overflow:hidden;flex-shrink:0">
                                 ?</div>
-                            <div id="profile-name" style="font-family:'Outfit';font-size:1.3rem;font-weight:700"></div>
-                            <div id="profile-class" style="color:var(--teal-light);font-size:.85rem;font-weight:600">
+                            <div>
+                                <div id="profile-name" style="font-family:'Outfit';font-size:1.3rem;font-weight:700"></div>
+                                <div id="profile-class" style="color:var(--teal-light);font-size:.85rem;font-weight:600"></div>
                             </div>
                         </div>
                         <div class="info-list" id="student-info"></div>
@@ -41,6 +42,8 @@
                             </div>
                             <div class="info-list" id="parent-info"></div>
                         </div>
+
+
 
                         <div class="card">
                             <h3 class="card-title" style="margin-bottom:1rem">🔑 Change Password</h3>
@@ -94,7 +97,11 @@
             if (!profile) return;
 
             const av = document.getElementById('profile-avatar');
-            av.textContent = (profile.name || 'S')[0];
+            if (profile.photo_url) {
+                av.innerHTML = `<img src="${profile.photo_url}" alt="Profile Photo" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`;
+            } else {
+                av.textContent = (profile.name || 'S')[0];
+            }
             document.getElementById('profile-name').textContent = profile.name;
             document.getElementById('profile-class').textContent = `Class ${profile.class}${profile.section} • Academic Year 2025–26`;
 

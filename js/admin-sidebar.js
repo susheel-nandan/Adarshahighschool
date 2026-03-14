@@ -11,7 +11,7 @@ function buildAdminSidebar(activePage) {
     { href: '/admin/faculty.html', icon: '👩‍🏫', label: 'Faculty', key: 'faculty' },
     { href: '/admin/class-faculty.html', icon: '🔗', label: 'Class-Faculty', key: 'class-faculty' },
     { href: '/admin/calendar-admin.html', icon: '📆', label: 'Calendar Events', key: 'calendar-admin' },
-    { href: '/admin/leave.html', icon: '📋', label: 'Leave Requests', key: 'leave' },
+    { href: '/admin/complaints.html', icon: '📢', label: 'Complaints', key: 'complaints' },
     { href: '/admin/profile.html', icon: '👤', label: 'My Profile', key: 'profile' },
   ];
   return `
@@ -56,20 +56,16 @@ function buildAdminTopBar(title) {
         <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
         <div class="top-bar-title">${title}</div>
       </div>
-      <span class="badge badge-danger" style="font-size:.72rem">Admin Session</span>
+      <div style="display:flex;align-items:center;gap:1rem;">
+        ${getThemeToggleHTML()}
+        <span class="badge badge-danger" style="font-size:.72rem">Admin Session</span>
+      </div>
     </div>
   `;
 }
 
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebar-overlay').classList.toggle('open');
-}
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('sidebar-overlay')?.addEventListener('click', () => {
-    document.getElementById('sidebar').classList.remove('open');
-    document.getElementById('sidebar-overlay').classList.remove('open');
-  });
+  document.getElementById('sidebar-overlay')?.addEventListener('click', window.closeSidebar);
 });
 
 async function initAdminPage() {

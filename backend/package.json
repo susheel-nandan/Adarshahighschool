@@ -1,0 +1,16 @@
+{
+  "name": "adarsha-portal-backend",
+  "version": "1.0.0",
+  "description": "AWS Lambda Node.js backend for Adarsha High School",
+  "main": "index.js",
+  "dependencies": {
+    "aws-sdk": "^2.1600.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "jwks-rsa": "^3.1.0",
+    "mysql2": "^3.9.7",
+    "serverless-http": "^3.2.0"
+  }
+}

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Attendance — Teacher Portal</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <style>
+        .att-btn {
+            padding: 0.3rem 0.6rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .att-btn.active-P {
+            background: var(--green);
+            color: white;
+            border-color: var(--green);
+        }
+
+        .att-btn.active-A {
+            background: var(--red);
+            color: white;
+            border-color: var(--red);
+        }
+
+        .att-btn.active-L {
+            background: var(--orange);
+            color: white;
+            border-color: var(--orange);
+        }
+
+        .modified-row td:first-child {
+            border-left: 3px solid var(--teal);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+                <button class="btn btn-sm" id="btn-back"
+                    style="margin-bottom:1rem; background:rgba(255,255,255,0.7); color:#333; border:none;">← Back to
+                    Class Hub</button>
+
+                <div class="card" style="margin-bottom:1.25rem">
+                    <div class="card-title" style="margin-bottom:1rem">📅 Select Date</div>
+                    <div style="display:flex;gap:.75rem;align-items:center">
+                        <input type="date" class="form-control" id="date-picker" style="max-width:200px"
+                            onchange="loadAttendance()" />
+                        <button class="btn btn-primary" onclick="loadAttendance()">Load Roster</button>
+                    </div>
+                </div>
+
+                <div class="card" id="att-card" style="display:none">
+                    <div class="card-header">
+                        <div class="card-title" id="att-title">Mark Attendance</div>
+                        <button class="btn btn-success" onclick="saveAttendance()">💾 Save</button>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Student</th>
+                                    <th>ID</th>
+                                    <th>Status (P/A/L)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="att-body"></tbody>
+                        </table>
+                    </div>
+
+                    <div id="no-students" style="display:none;text-align:center;padding:2rem;color:var(--text-muted)">
+                        No students found.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/js/utils.js"></script>
+    <script src="/js/teacher-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildTeacherSidebar('attendance');
+        document.getElementById('topbar-container').innerHTML = buildTeacherTopBar('Attendance');
+
+        let rows = [];
+        let class_id, section, subject_id, className;
+
+        function renderRows(students) {
+            rows = students;
+            const tbody = document.getElementById('att-body');
+            if (!students.length) {
+                document.getElementById('no-students').style.display = '';
+                tbody.innerHTML = ''; return;
+            }
+            document.getElementById('no-students').style.display = 'none';
+            tbody.innerHTML = students.map((s, i) => {
+                const st = s.status || 'P';
+                return `<tr id="row-${s.student_id}">
+                    <td>${i + 1}</td>
+                    <td style="font-weight:600">${s.name}</td>
+                    <td><code>${s.student_id}</code></td>
+                    <td>
+                        <div style="display:flex;gap:0.3rem">
+                            <button class="att-btn ${st === 'P' ? 'active-P' : ''}" onclick="setStatus('${s.student_id}','P')">P</button>
+                            <button class="att-btn ${st === 'A' ? 'active-A' : ''}" onclick="setStatus('${s.student_id}','A')">A</button>
+                            <button class="att-btn ${st === 'L' ? 'active-L' : ''}" onclick="setStatus('${s.student_id}','L')">L</button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function setStatus(id, st) {
+            const student = rows.find(x => x.student_id === id);
+            if (student) student.status = st;
+            const tr = document.getElementById(`row-${id}`);
+            tr.classList.add('modified-row');
+            const btns = tr.querySelectorAll('.att-btn');
+            btns.forEach(b => {
+                b.className = 'att-btn';
+                if (b.textContent === st) b.classList.add(`active-${st}`);
+            });
+        }
+
+        async function loadAttendance() {
+            const date = document.getElementById('date-picker').value;
+            if (!date) return;
+
+            document.getElementById('att-card').style.display = '';
+            document.getElementById('att-body').innerHTML = '<tr><td colspan="4" style="text-align:center;padding:2rem">Loading...</td></tr>';
+
+            const data = await api('GET', `/api/teacher/attendance?class_id=${class_id}&section=${section}&subject_id=${subject_id}&date=${date}`).catch(e => {
+                showToast(e.message, 'error'); return null;
+            });
+            if (!data) return;
+
+            document.getElementById('att-title').textContent = `${className} ${section} — ${date}`;
+            renderRows(data.students);
+        }
+
+        async function saveAttendance() {
+            const date = document.getElementById('date-picker').value;
+            const entries = rows.map(s => ({ student_id: s.student_id, status: s.status }));
+            try {
+                await api('POST', '/api/teacher/attendance/bulk', { class_id, section, subject_id, date, entries });
+                showToast('✅ Attendance saved!', 'success');
+                document.querySelectorAll('.modified-row').forEach(r => r.classList.remove('modified-row'));
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        (async () => {
+            await initTeacherPage();
+
+            const params = new URLSearchParams(window.location.search);
+            class_id = params.get('class_id');
+            section = params.get('section');
+            subject_id = params.get('subject_id');
+            className = params.get('class_name') || `Class ${class_id}`;
+            document.getElementById('date-picker').value = new Date().toISOString().split('T')[0];
+
+            if (!class_id || !subject_id) {
+                showToast('Invalid context. Go to Dashboard.', 'error');
+                return;
+            }
+
+            document.getElementById('btn-back').onclick = () => window.location.href = `/teacher/class-dashboard.html${window.location.search}`;
+
+            await loadAttendance();
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>

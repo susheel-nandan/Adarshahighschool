@@ -2,100 +2,98 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <title>Dashboard — Student Portal</title>
-    <link rel="stylesheet" href="/css/style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Dashboard — Student Portal</title>
+  <link rel="stylesheet" href="/css/style.css" />
 </head>
 
 <body>
-    <div id="page-loader">
-        <div class="spinner"></div>
-    </div>
-    <div class="app-layout">
-        <div id="sidebar-container"></div>
-        <div class="main-content">
-            <div id="topbar-container"></div>
-            <div class="page-content animate-fade" id="content">
-                <!-- Stats -->
-                <div class="stat-grid" id="stat-grid">
-                    <div class="stat-card skeleton" style="height:90px"></div>
-                    <div class="stat-card skeleton" style="height:90px"></div>
-                    <div class="stat-card skeleton" style="height:90px"></div>
-                    <div class="stat-card skeleton" style="height:90px"></div>
-                </div>
-
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
-                    <!-- Recent Marks -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">📊 Latest Marks (FA1)</h3>
-                            <a href="/student/marks.html" style="font-size:.8rem;color:var(--primary-light)">View All
-                                →</a>
-                        </div>
-                        <div id="marks-mini"></div>
-                    </div>
-
-                    <!-- Upcoming Exams -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">📝 Upcoming Exams</h3>
-                            <a href="/student/exams.html" style="font-size:.8rem;color:var(--primary-light)">View All
-                                →</a>
-                        </div>
-                        <div id="exams-mini"></div>
-                    </div>
-                </div>
-
-                <!-- Attendance Chart -->
-                <div class="card" style="margin-top:1.25rem">
-                    <div class="card-header">
-                        <h3 class="card-title">✅ Attendance Overview</h3>
-                        <a href="/student/attendance.html" style="font-size:.8rem;color:var(--primary-light)">Full View
-                            →</a>
-                    </div>
-                    <div style="display:flex;gap:2rem;align-items:center;flex-wrap:wrap" id="att-overview"></div>
-                </div>
-
-                <!-- Quick Links -->
-                <div class="card" style="margin-top:1.25rem">
-                    <h3 class="card-title" style="margin-bottom:1rem">⚡ Quick Links</h3>
-                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem">
-                        <a href="/student/timetable.html"><button class="btn btn-secondary w-full">📅
-                                Timetable</button></a>
-                        <a href="/student/calendar.html"><button class="btn btn-secondary w-full">📆
-                                Calendar</button></a>
-                        <a href="/student/leave.html"><button class="btn btn-secondary w-full">🏖️ Leave
-                                Request</button></a>
-                        <a href="/student/faculty.html"><button class="btn btn-secondary w-full">👩‍🏫
-                                Faculty</button></a>
-                        <a href="/student/profile.html"><button class="btn btn-secondary w-full">👤 My
-                                Profile</button></a>
-                    </div>
-                </div>
-            </div>
+  <div id="page-loader">
+    <div class="spinner"></div>
+  </div>
+  <div class="app-layout">
+    <div id="sidebar-container"></div>
+    <div class="main-content">
+      <div id="topbar-container"></div>
+      <div class="page-content animate-fade" id="content">
+        <!-- Stats -->
+        <div class="stat-grid" id="stat-grid">
+          <div class="stat-card skeleton" style="height:90px"></div>
+          <div class="stat-card skeleton" style="height:90px"></div>
+          <div class="stat-card skeleton" style="height:90px"></div>
+          <div class="stat-card skeleton" style="height:90px"></div>
         </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+          <!-- Recent Marks -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">📊 Latest Marks (FA1)</h3>
+              <a href="/student/marks.html" style="font-size:.8rem;color:var(--primary-light)">View All
+                →</a>
+            </div>
+            <div id="marks-mini"></div>
+          </div>
+
+          <!-- Upcoming Exams -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">📝 Upcoming Exams</h3>
+              <a href="/student/exams.html" style="font-size:.8rem;color:var(--primary-light)">View All
+                →</a>
+            </div>
+            <div id="exams-mini"></div>
+          </div>
+        </div>
+
+        <!-- Attendance Chart -->
+        <div class="card" style="margin-top:1.25rem">
+          <div class="card-header">
+            <h3 class="card-title">✅ Attendance Overview</h3>
+            <a href="/student/attendance.html" style="font-size:.8rem;color:var(--primary-light)">Full View
+              →</a>
+          </div>
+          <div style="display:flex;gap:2rem;align-items:center;flex-wrap:wrap" id="att-overview"></div>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="card" style="margin-top:1.25rem">
+          <h3 class="card-title" style="margin-bottom:1rem">⚡ Quick Links</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem">
+            <a href="/student/timetable.html"><button class="btn btn-secondary w-full">📅
+                Timetable</button></a>
+            <a href="/student/calendar.html"><button class="btn btn-secondary w-full">📆
+                Calendar</button></a>
+            <a href="/student/faculty.html"><button class="btn btn-secondary w-full">👨‍🏫
+                Faculty</button></a>
+            <a href="/student/profile.html"><button class="btn btn-secondary w-full">👤 My
+                Profile</button></a>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <script src="/js/utils.js"></script>
-    <script src="/js/student-sidebar.js"></script>
-    <script>
-        document.getElementById('sidebar-container').innerHTML = buildStudentSidebar('dashboard');
-        document.getElementById('topbar-container').innerHTML = buildStudentTopBar('Dashboard');
+  <script src="/js/utils.js"></script>
+  <script src="/js/student-sidebar.js"></script>
+  <script>
+    document.getElementById('sidebar-container').innerHTML = buildStudentSidebar('dashboard');
+    document.getElementById('topbar-container').innerHTML = buildStudentTopBar('Dashboard');
 
-        (async () => {
-            const profile = await initStudentPage();
-            if (!profile) return;
+    (async () => {
+      const profile = await initStudentPage();
+      if (!profile) return;
 
-            // Load marks + rank
-            const marksData = await api('GET', '/api/student/marks');
-            const att = await api('GET', '/api/student/attendance');
-            const exams = await api('GET', '/api/student/exams');
+      // Load marks + rank
+      const marksData = await api('GET', '/api/student/marks');
+      const att = await api('GET', '/api/student/attendance');
+      const exams = await api('GET', '/api/student/exams');
 
-            // Stat cards
-            const fa1 = marksData.marks.filter(m => m.exam_type === 'FA1');
-            const avg = fa1.length ? (fa1.reduce((s, m) => s + m.percentage, 0) / fa1.length).toFixed(1) : '—';
-            document.getElementById('stat-grid').innerHTML = `
+      // Stat cards
+      const fa1 = marksData.marks.filter(m => m.exam_type === 'FA1');
+      const avg = fa1.length ? (fa1.reduce((s, m) => s + m.percentage, 0) / fa1.length).toFixed(1) : '—';
+      document.getElementById('stat-grid').innerHTML = `
       <div class="stat-card" style="--stat-color:var(--primary);--stat-icon-bg:rgba(37,99,235,.15)">
         <div class="stat-icon">🎒</div>
         <div class="stat-info">
@@ -120,38 +118,38 @@
       <div class="stat-card" style="--stat-color:var(--accent);--stat-icon-bg:rgba(245,158,11,.15)">
         <div class="stat-icon">🏆</div>
         <div class="stat-info">
-          <div class="stat-value">${marksData.rank || '—'} / ${marksData.totalStudents}</div>
-          <div class="stat-label">Class Rank</div>
+          <div class="stat-value" style="font-size:1.15rem">Gen: ${marksData.generalRank || '—'} | IIT: ${marksData.iitRank || '—'}</div>
+          <div class="stat-label">Ranks (of ${marksData.totalStudents})</div>
         </div>
       </div>
     `;
 
-            // Mini marks table
-            document.getElementById('marks-mini').innerHTML = fa1.slice(0, 5).map(m => {
-                const g = getGrade(m.percentage);
-                return `<div class="info-item">
+      // Mini marks table
+      document.getElementById('marks-mini').innerHTML = fa1.slice(0, 5).map(m => {
+        const g = getGrade(m.percentage);
+        return `<div class="info-item">
         <span class="info-key">${m.subject}</span>
         <span style="display:flex;align-items:center;gap:.5rem">
           <span class="info-val">${m.marks_obtained}/100</span>
           <span class="${g.cls}" style="font-size:.75rem;font-weight:700">${g.grade}</span>
         </span>
       </div>`;
-            }).join('') || '<p style="color:var(--text-muted);font-size:.85rem">No marks yet.</p>';
+      }).join('') || '<p style="color:var(--text-muted);font-size:.85rem">No marks yet.</p>';
 
-            // Upcoming exams
-            const upcoming = exams.filter(e => new Date(e.exam_date) >= new Date('2026-02-28')).slice(0, 4);
-            document.getElementById('exams-mini').innerHTML = upcoming.map(e => `
+      // Upcoming exams
+      const upcoming = exams.filter(e => new Date(e.exam_date) >= new Date()).slice(0, 4);
+      document.getElementById('exams-mini').innerHTML = upcoming.map(e => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:.65rem 1rem;background:rgba(245,158,11,.06);border-radius:8px;margin-bottom:.4rem">
         <div>
-          <div style="font-weight:600;font-size:.85rem">${e.subject}</div>
-          <div style="font-size:.72rem;color:var(--text-muted)">${e.exam_type} • ${fmtDate(e.exam_date)}</div>
+          <div style="font-weight:600;font-size:.85rem;color:var(--text-primary)">${e.subject}</div>
+          <div style="font-size:.72rem;color:var(--text-primary)">${e.exam_type} • ${fmtDate(e.exam_date)}</div>
         </div>
         <span class="countdown-badge">${countdownDays(e.exam_date)}</span>
       </div>
-    `).join('') || '<p style="color:var(--text-muted);font-size:.85rem;padding:.5rem">No upcoming exams.</p>';
+    `).join('') || '<p style="color:var(--text-primary);font-size:.85rem;padding:.5rem">No upcoming exams.</p>';
 
-            // Attendance overview
-            document.getElementById('att-overview').innerHTML = `
+      // Attendance overview
+      document.getElementById('att-overview').innerHTML = `
       <svg width="120" height="120" viewBox="0 0 120 120">
         <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="14"/>
         <circle cx="60" cy="60" r="50" fill="none" stroke="var(--success)" stroke-width="14"
@@ -167,9 +165,9 @@
       </div>
     `;
 
-            hideLoader();
-        })();
-    </script>
+      hideLoader();
+    })();
+  </script>
 </body>
 
 </html>

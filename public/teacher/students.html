@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Students List — Teacher Portal</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+                <button class="btn btn-sm" id="btn-back"
+                    style="margin-bottom:1rem; background:rgba(255,255,255,0.7); color:#333; border:none;">← Back to
+                    Class Hub</button>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title" id="list-title">🧑‍🎓 Enrolled Students</div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Student ID</th>
+                                    <th>Name</th>
+                                </tr>
+                            </thead>
+                            <tbody id="student-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <script src="/js/utils.js"></script>
+    <script src="/js/teacher-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildTeacherSidebar('dashboard');
+        document.getElementById('topbar-container').innerHTML = buildTeacherTopBar('Students List');
+
+        (async () => {
+            await initTeacherPage();
+
+            const params = new URLSearchParams(window.location.search);
+            const class_id = params.get('class_id');
+            const section = params.get('section');
+            const subject_id = params.get('subject_id');
+            const className = params.get('class_name') || `Class ${class_id}`;
+
+            if (!class_id || !subject_id) {
+                showToast('Invalid context. Go to Dashboard.', 'error');
+                return;
+            }
+
+            document.getElementById('btn-back').onclick = () => window.location.href = `/teacher/class-dashboard.html${window.location.search}`;
+            document.getElementById('list-title').textContent = `🧑‍🎓 Students in ${className} ${section}`;
+
+            const students = await api('GET', `/api/teacher/students?class_id=${class_id}&section=${section}&subject_id=${subject_id}`).catch(() => []);
+
+            const tbody = document.getElementById('student-body');
+            if (!students.length) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted)">No students found.</td></tr>';
+            } else {
+                tbody.innerHTML = students.map((s, i) => `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td><code>${s.student_id}</code></td>
+                        <td style="font-weight:600">${s.name}</td>
+                    </tr>
+                `).join('');
+            }
+
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>

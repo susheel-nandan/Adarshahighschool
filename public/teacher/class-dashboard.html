@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Class Hub — Teacher Portal</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+
+                <!-- Hub Header -->
+                <div class="card"
+                    style="margin-bottom:1.5rem; background:linear-gradient(135deg,#e0f2fe,#bae6fd); border:none;">
+                    <button class="btn btn-sm" onclick="window.location.href='/teacher/dashboard.html'"
+                        style="margin-bottom:1rem; background:rgba(255,255,255,0.7); color:#333; border:none;">← Back to
+                        Dashboard</button>
+                    <div style="display:flex;align-items:center;gap:1.5rem">
+                        <div
+                            style="width:70px;height:70px;background:#0d9488;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:2rem;color:white;">
+                            🏫
+                        </div>
+                        <div>
+                            <div style="font-size:1.5rem;font-weight:800;color:#0369a1" id="hub-title">Loading Class...
+                            </div>
+                            <div style="font-size:1.1rem;color:#0e7490;margin-top:0.2rem" id="hub-subtitle">Loading
+                                Subject...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Management Options Grid -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Management Options</div>
+                    </div>
+
+                    <div class="stat-grid" id="options-grid">
+                        <!-- Populated by JS to include URL params -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/js/utils.js"></script>
+    <script src="/js/teacher-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildTeacherSidebar('dashboard');
+        document.getElementById('topbar-container').innerHTML = buildTeacherTopBar('Class Hub');
+
+        (async () => {
+            await initTeacherPage();
+
+            const params = new URLSearchParams(window.location.search);
+            const class_id = params.get('class_id');
+            const section = params.get('section');
+            const subject_id = params.get('subject_id');
+
+            if (!class_id || !section || !subject_id) {
+                showToast('Invalid class selection.', 'error');
+                window.location.href = '/teacher/dashboard.html';
+                return;
+            }
+
+            // Fetch assignments to get names
+            const assignments = await api('GET', '/api/teacher/assignments').catch(() => []);
+            const current = assignments.find(a => a.class_id == class_id && a.section === section && a.subject_id == subject_id);
+
+            if (!current) {
+                showToast('You are not assigned to this class and subject.', 'error');
+                window.location.href = '/teacher/dashboard.html';
+                return;
+            }
+
+            document.getElementById('hub-title').textContent = `${current.class_name} - Section ${current.section}`;
+            document.getElementById('hub-subtitle').textContent = `📚 Subject: ${current.subject_name}`;
+
+            const q = `?class_id=${class_id}&section=${section}&subject_id=${subject_id}&subject_name=${encodeURIComponent(current.subject_name)}&class_name=${encodeURIComponent(current.class_name)}`;
+
+            const options = [
+                { title: 'Attendance', desc: 'Mark or edit daily attendance', icon: '📅', link: '/teacher/attendance.html' + q, color: 'var(--blue)' },
+                { title: 'Marks', desc: 'Enter and update student marks', icon: '📝', link: '/teacher/marks.html' + q, color: 'var(--green)' },
+                { title: 'Syllabus', desc: 'Upload and edit exam syllabus', icon: '📖', link: '/teacher/syllabus.html' + q, color: 'var(--purple)' },
+                { title: 'Students', desc: 'View list of students', icon: '🧑‍🎓', link: '/teacher/students.html' + q, color: 'var(--orange)' }
+            ];
+
+            const grid = document.getElementById('options-grid');
+            grid.innerHTML = options.map(opt => `
+                <a href="${opt.link}" style="text-decoration:none; color:inherit;">
+                    <div class="stat-card" style="--stat-color:${opt.color}; cursor:pointer; height:100%">
+                        <div class="stat-icon" style="background:${opt.color}15; color:${opt.color}">${opt.icon}</div>
+                        <div class="stat-info">
+                            <div class="stat-value" style="font-size:1.2rem">${opt.title}</div>
+                            <div class="stat-label" style="font-size:0.85rem; margin-top:0.4rem; white-space:normal">${opt.desc}</div>
+                        </div>
+                    </div>
+                </a>
+            `).join('');
+
+            hideLoader();
+        })();
+    </script>
+</body>
+
+</html>

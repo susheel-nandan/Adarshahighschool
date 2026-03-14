@@ -89,18 +89,18 @@
         document.getElementById('topbar-container').innerHTML = buildAdminTopBar('Calendar Events');
         let all = [];
 
-        const typeMeta = { holiday: { badge: 'badge-danger', icon: '🏖️' }, event: { badge: 'badge-primary', icon: '🎉' }, exam: { badge: 'badge-warning', icon: '📝' }, meeting: { badge: 'badge-success', icon: '🤝' } };
+        const typeMeta = { holiday: { badge: 'badge-danger' }, event: { badge: 'badge-primary' }, exam: { badge: 'badge-warning' }, meeting: { badge: 'badge-success' } };
 
         function filterRender() {
             const ft = document.getElementById('filter-type').value;
             const list = ft ? all.filter(e => e.type === ft) : all;
             document.getElementById('ecount').textContent = `${list.length} event(s)`;
             document.getElementById('tbody').innerHTML = list.map(e => {
-                const m = typeMeta[e.type] || { badge: 'badge-primary', icon: '📌' };
+                const m = typeMeta[e.type] || { badge: 'badge-primary' };
                 return `<tr>
         <td>${fmtDate(e.date)}</td>
         <td><strong>${e.title}</strong></td>
-        <td><span class="badge ${m.badge}">${m.icon} ${e.type.charAt(0).toUpperCase() + e.type.slice(1)}</span></td>
+        <td><span class="badge ${m.badge}">${e.type.charAt(0).toUpperCase() + e.type.slice(1)}</span></td>
         <td style="font-size:.8rem;color:var(--text-muted)">${e.description || '—'}</td>
         <td><button class="btn btn-primary btn-sm" onclick="openEdit(${e.id})">✏️ Edit</button></td>
       </tr>`;
@@ -136,7 +136,7 @@
             await api('DELETE', `/api/admin/calendar/${id}`); showToast('Deleted', 'success'); closeModal(); load();
         }
         async function load() { all = await api('GET', '/api/admin/calendar'); filterRender(); }
-        (async () => { await initAdminPage(); await load(); hideLoader(); })();
+        (async () => { await initAdminPage(); await load(); hideLoader(); window.closeSidebar(); })();
     </script>
 </body>
 

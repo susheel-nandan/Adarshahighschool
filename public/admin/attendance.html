@@ -18,50 +18,49 @@
             <div id="topbar-container"></div>
             <div class="page-content animate-fade">
                 <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem">
-                    <select class="form-control" id="sel-class" style="width:auto" onchange="loadStudents()">
+                    <select class="form-control" id="sel-class" style="width:auto">
                         <option>6</option>
                         <option>7</option>
                         <option value="8" selected>8</option>
                         <option>9</option>
                         <option>10</option>
                     </select>
-                    <select class="form-control" id="sel-section" style="width:auto" onchange="loadStudents()">
+                    <select class="form-control" id="sel-section" style="width:auto">
                         <option>A</option>
                         <option>B</option>
-                        <option>C</option>
                     </select>
-                    <select class="form-control" id="sel-student" style="width:auto;min-width:200px"
-                        onchange="loadAttendance()">
-                        <option value="">— Select Student —</option>
-                    </select>
-                    <select class="form-control" id="filter-status" style="width:auto" onchange="renderTable()">
-                        <option value="ALL">All</option>
-                        <option value="P">Present</option>
-                        <option value="A">Absent</option>
-                        <option value="L">Leave</option>
-                    </select>
+                    <input type="date" class="form-control" id="sel-date" style="width:auto" />
+                    <button class="btn btn-secondary" onclick="loadClassAttendance()">↻ Load Class</button>
+
+                    <div style="margin-left:auto; display:flex; gap:0.5rem">
+                        <button class="btn btn-danger" onclick="promptMarkAbsent()" id="btn-absent"
+                            style="display:none">❌ Mark Absent (by ID)</button>
+                        <button class="btn btn-primary" onclick="saveBulkAttendance()" id="btn-save"
+                            style="display:none">💾 Save Attendance</button>
+                    </div>
                 </div>
-                <div id="att-stats" style="margin-bottom:1rem"></div>
+
                 <div class="card" id="att-card" style="display:none">
                     <div class="card-header">
-                        <h3 class="card-title">✅ Attendance Records</h3>
+                        <h3 class="card-title">👥 Class Attendance</h3>
+                        <div id="att-summary" style="font-size:0.85rem;font-weight:600;color:var(--text-muted)"></div>
                     </div>
                     <div class="table-wrapper">
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Date</th>
-                                    <th>Day</th>
+                                    <th>Roll Number (ID)</th>
+                                    <th>Name</th>
                                     <th>Status</th>
-                                    <th>Change</th>
+                                    <th>Quick Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="att-tbody"></tbody>
                         </table>
                     </div>
                 </div>
-                <div id="no-student" class="card" style="text-align:center;padding:3rem;color:var(--text-muted)">Select
-                    a class and student.</div>
+                <div id="no-content" class="card" style="text-align:center;padding:3rem;color:var(--text-muted)">Select
+                    a class and click "Load Class".</div>
             </div>
         </div>
     </div>
@@ -69,59 +68,105 @@
     <script src="/js/admin-sidebar.js"></script>
     <script>
         document.getElementById('sidebar-container').innerHTML = buildAdminSidebar('attendance');
-        document.getElementById('topbar-container').innerHTML = buildAdminTopBar('Edit Attendance');
-        const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        let attData = [];
+        document.getElementById('topbar-container').innerHTML = buildAdminTopBar('Class Attendance');
 
-        async function loadStudents() {
-            const cls = document.getElementById('sel-class').value, sec = document.getElementById('sel-section').value;
-            const students = await api('GET', '/api/admin/students');
-            const filtered = students.filter(s => String(s.class) === cls && s.section === sec);
-            document.getElementById('sel-student').innerHTML = '<option value="">— Select Student —</option>' + filtered.map(s => `<option value="${s.student_id}">${s.name}</option>`).join('');
-        }
+        document.getElementById('sel-date').value = new Date().toISOString().split('T')[0];
 
-        async function loadAttendance() {
-            const sid = document.getElementById('sel-student').value;
-            if (!sid) { document.getElementById('att-card').style.display = 'none'; document.getElementById('no-student').style.display = ''; document.getElementById('att-stats').innerHTML = ''; return; }
-            attData = await api('GET', `/api/admin/attendance/${sid}`).catch(() => []);
-            document.getElementById('att-card').style.display = ''; document.getElementById('no-student').style.display = 'none';
-            const total = attData.length, present = attData.filter(r => r.status === 'P').length, absent = attData.filter(r => r.status === 'A').length, leave = attData.filter(r => r.status === 'L').length;
-            const pct = total ? (((present + leave) / total) * 100).toFixed(1) : '0';
-            document.getElementById('att-stats').innerHTML = `
-      <div class="stat-grid">
-        <div class="stat-card" style="--stat-color:var(--success);--stat-icon-bg:rgba(16,185,129,.15)"><div class="stat-icon">✅</div><div class="stat-info"><div class="stat-value">${pct}%</div><div class="stat-label">Rate</div></div></div>
-        <div class="stat-card" style="--stat-color:var(--primary);--stat-icon-bg:rgba(37,99,235,.15)"><div class="stat-icon">📅</div><div class="stat-info"><div class="stat-value">${present}</div><div class="stat-label">Present</div></div></div>
-        <div class="stat-card" style="--stat-color:var(--danger);--stat-icon-bg:rgba(239,68,68,.15)"><div class="stat-icon">❌</div><div class="stat-info"><div class="stat-value">${absent}</div><div class="stat-label">Absent</div></div></div>
-        <div class="stat-card" style="--stat-color:var(--warning);--stat-icon-bg:rgba(245,158,11,.15)"><div class="stat-icon">🏖️</div><div class="stat-info"><div class="stat-value">${leave}</div><div class="stat-label">Leave</div></div></div>
-      </div>`;
+        let classList = [];
+
+        async function loadClassAttendance() {
+            const cls = document.getElementById('sel-class').value;
+            const sec = document.getElementById('sel-section').value;
+            const dt = document.getElementById('sel-date').value;
+            if (!dt) { showToast('Select a date', 'error'); return; }
+
+            document.getElementById('no-content').style.display = 'none';
+            document.getElementById('att-card').style.display = 'none';
+            document.getElementById('btn-absent').style.display = 'none';
+            document.getElementById('btn-save').style.display = 'none';
+
+            classList = await api('GET', `/api/admin/attendance/class?class=${cls}&section=${sec}&date=${dt}`).catch(() => []);
+
+            if (!classList.length) {
+                document.getElementById('no-content').style.display = '';
+                document.getElementById('no-content').textContent = 'No students found in this class/section.';
+                return;
+            }
+
+            document.getElementById('att-card').style.display = '';
+            document.getElementById('btn-absent').style.display = '';
+            document.getElementById('btn-save').style.display = '';
+
             renderTable();
         }
 
         function renderTable() {
-            const f = document.getElementById('filter-status').value;
-            const rows = f === 'ALL' ? attData : attData.filter(r => r.status === f);
-            document.getElementById('att-tbody').innerHTML = rows.slice(0, 80).map(r => {
-                const bg = r.status === 'P' ? 'badge-success' : r.status === 'A' ? 'badge-danger' : 'badge-warning';
-                const lbl = { P: 'Present', A: 'Absent', L: 'Leave' }[r.status];
+            let present = 0, absent = 0, leave = 0;
+            const rows = classList.map(s => {
+                const bg = s.status === 'P' ? 'badge-success' : s.status === 'A' ? 'badge-danger' : 'badge-warning';
+                const lbl = { P: 'Present', A: 'Absent', L: 'Leave' }[s.status];
+
+                if (s.status === 'P') present++;
+                else if (s.status === 'A') absent++;
+                else leave++;
+
                 return `<tr>
-        <td>${fmtDate(r.date)}</td>
-        <td>${DAYS[new Date(r.date).getDay()]}</td>
-        <td><span class="badge ${bg}">${lbl}</span></td>
-        <td style="display:flex;gap:.4rem">
-          ${['P', 'A', 'L'].filter(s => s !== r.status).map(s => `<button class="btn btn-sm" style="padding:.2rem .55rem;font-size:.72rem;${s === 'P' ? 'background:var(--success)' : s === 'A' ? 'background:var(--danger)' : 'background:var(--warning)'};color:#fff;border:none;border-radius:4px;cursor:pointer" onclick="changeStatus(${r.id},'${s}')">${{ P: 'Present', A: 'Absent', L: 'Leave' }[s]}</button>`).join('')}
-        </td>
-      </tr>`;
+                    <td style="font-family:monospace;font-weight:600">${s.student_id}</td>
+                    <td>${s.name}</td>
+                    <td><span class="badge ${bg}">${lbl}</span></td>
+                    <td style="display:flex;gap:.4rem">
+                        ${['P', 'A', 'L'].filter(st => st !== s.status).map(st =>
+                    `<button class="btn btn-sm" style="padding:.2rem .55rem;font-size:.72rem;${st === 'P' ? 'background:var(--success)' : st === 'A' ? 'background:var(--danger)' : 'background:var(--warning)'};color:#fff;border:none;border-radius:4px;cursor:pointer" onclick="updateLocalStatus('${s.student_id}', '${st}')">${{ P: 'P', A: 'A', L: 'L' }[st]}</button>`
+                ).join('')}
+                    </td>
+                </tr>`;
             }).join('');
+
+            document.getElementById('att-tbody').innerHTML = rows;
+            document.getElementById('att-summary').textContent = `Total: ${classList.length} | Present: ${present} | Absent: ${absent} | Leave: ${leave}`;
         }
 
-        async function changeStatus(id, status) {
-            await api('PUT', `/api/admin/attendance/${id}`, { status });
-            const r = attData.find(x => x.id === id); if (r) r.status = status;
-            showToast(`Marked as ${status === 'P' ? 'Present' : status === 'A' ? 'Absent' : 'Leave'}`, 'success');
-            renderTable(); await loadAttendance();
+        function updateLocalStatus(sid, status) {
+            const student = classList.find(s => s.student_id === sid);
+            if (student) {
+                student.status = status;
+                renderTable();
+            }
         }
 
-        (async () => { await initAdminPage(); await loadStudents(); hideLoader(); })();
+        function promptMarkAbsent() {
+            const sid = prompt('Enter Student ID (Roll Number) to mark Absent:');
+            if (!sid) return;
+
+            const student = classList.find(s => s.student_id.toLowerCase() === sid.toLowerCase());
+            if (student) {
+                updateLocalStatus(student.student_id, 'A');
+                showToast(`Marked ${student.name} as Absent`, 'info');
+            } else {
+                showToast(`Student ID "${sid}" not found in this class.`, 'error');
+            }
+        }
+
+        async function saveBulkAttendance() {
+            const dt = document.getElementById('sel-date').value;
+            const btn = document.getElementById('btn-save');
+
+            btn.textContent = 'Saving...';
+            btn.disabled = true;
+
+            try {
+                const entries = classList.map(s => ({ student_id: s.student_id, status: s.status }));
+                const res = await api('POST', '/api/admin/attendance/bulk', { date: dt, entries });
+                showToast(res.message, 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btn.textContent = '💾 Save Attendance';
+                btn.disabled = false;
+            }
+        }
+
+        (async () => { await initAdminPage(); hideLoader(); })();
     </script>
 </body>
 

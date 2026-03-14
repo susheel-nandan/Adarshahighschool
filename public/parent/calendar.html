@@ -17,7 +17,7 @@
         <div class="main-content">
             <div id="topbar-container"></div>
             <div class="page-content animate-fade">
-                <div style="display:grid;grid-template-columns:1fr 340px;gap:1.25rem;align-items:start">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:1.25rem;align-items:start">
                     <div class="card">
                         <div class="card-header" style="margin-bottom:1rem">
                             <h3 class="card-title">📆 <span id="cal-month-label"></span></h3>
@@ -48,7 +48,8 @@
                     <div class="card">
                         <h3 class="card-title" style="margin-bottom:1rem">📋 All Events</h3>
                         <div id="events-list"
-                            style="display:flex;flex-direction:column;gap:.6rem;max-height:500px;overflow-y:auto"></div>
+                            style="display:flex;flex-direction:column;gap:.6rem;max-height:500px;overflow-y:auto;color:var(--text-primary)">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -59,10 +60,9 @@
     <script>
         document.getElementById('sidebar-container').innerHTML = buildParentSidebar('calendar');
         document.getElementById('topbar-container').innerHTML = buildParentTopBar('School Calendar');
-        let currentDate = new Date('2026-02-28');
+        let currentDate = new Date();
         let allEvents = [];
         const typeColors = { holiday: 'var(--danger)', exam: 'var(--warning)', event: 'var(--teal)', meeting: 'var(--primary)' };
-        const typeIcons = { holiday: '🏖️', exam: '📝', event: '🎉', meeting: '👥' };
 
         function renderCalendar() {
             const year = currentDate.getFullYear(), month = currentDate.getMonth();
@@ -79,11 +79,11 @@
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                 const evts = eventMap[dateStr] || [];
                 const div = document.createElement('div'); div.className = 'cal-day';
-                if (dateStr === '2026-02-28') div.classList.add('today');
+                if (dateStr === new Date().toLocaleDateString('en-CA')) div.classList.add('today');
                 else if (evts.some(e => e.type === 'holiday')) div.classList.add('holiday');
                 else if (evts.some(e => e.type === 'exam')) div.classList.add('exam-day');
                 else if (evts.length) div.classList.add('event-day');
-                div.innerHTML = `<span>${d}</span>${evts.length ? `<span style="font-size:.5rem;margin-top:2px">${typeIcons[evts[0].type] || '•'}</span>` : ''}`;
+                div.innerHTML = `<span>${d}</span>`;
                 if (evts.length) { div.title = evts.map(e => e.title).join(', '); div.style.cursor = 'pointer'; }
                 calGrid.appendChild(div);
             }
@@ -97,12 +97,12 @@
             renderCalendar();
             document.getElementById('events-list').innerHTML = allEvents.map(e => `
       <div style="display:flex;gap:.75rem;align-items:flex-start;padding:.6rem;background:rgba(255,255,255,.03);border-radius:8px;border-left:3px solid ${typeColors[e.type] || 'var(--primary)'}">
-        <span style="font-size:1.1rem">${typeIcons[e.type] || '•'}</span>
         <div><div style="font-weight:600;font-size:.85rem">${e.title}</div>
         <div style="font-size:.72rem;color:var(--text-muted)">${fmtDate(e.date)}</div>
         ${e.description ? `<div style="font-size:.75rem;color:var(--text-secondary);margin-top:.2rem">${e.description}</div>` : ''}
         </div></div>`).join('');
             hideLoader();
+            window.closeSidebar();
         })();
     </script>
 </body>

@@ -5,6 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <title>Class-Faculty — Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css" />
 </head>
 
@@ -41,7 +42,11 @@
                     <div id="count" style="font-size:.82rem;color:var(--text-muted);margin-left:auto"></div>
                 </div>
 
-                <div class="card">
+                <!-- Class Teachers -->
+                <div class="card" style="margin-bottom:1.5rem">
+                    <div class="card-header">
+                        <div class="card-title">👨‍🏫 Class Teachers</div>
+                    </div>
                     <div class="table-wrapper">
                         <table class="data-table">
                             <thead>
@@ -53,6 +58,27 @@
                                 </tr>
                             </thead>
                             <tbody id="tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Subject Teachers -->
+                <div class="card" style="margin-bottom:1.5rem">
+                    <div class="card-header">
+                        <div class="card-title">📚 Subject Teachers </div>
+                        <button class="btn btn-primary btn-sm" onclick="openAssignSubjectTeacher()">➕ Assign Subject
+                            Teacher</button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Faculty Name</th>
+                                    <th>Subject</th>
+                                    <th>Remove</th>
+                                </tr>
+                            </thead>
+                            <tbody id="subject-teachers-body"></tbody>
                         </table>
                     </div>
                 </div>
@@ -70,11 +96,11 @@
         </div>
     </div>
 
-    <!-- Assign modal -->
+    <!-- Assign Class Teacher Modal -->
     <div class="modal-overlay" id="assign-modal">
         <div class="modal" style="max-width:420px">
             <div class="modal-header">
-                <h3 style="font-size:1rem;font-weight:700">Assign Faculty to Class</h3>
+                <h3 style="font-size:1rem;font-weight:700">Assign Class Teacher</h3>
                 <button class="modal-close"
                     onclick="document.getElementById('assign-modal').classList.remove('open')">✕</button>
             </div>
@@ -92,6 +118,32 @@
                     <button type="button" class="btn btn-secondary"
                         onclick="document.getElementById('assign-modal').classList.remove('open')">Cancel</button>
                     <button type="submit" class="btn btn-primary">Assign</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Assign Subject Teacher Modal -->
+    <div class="modal-overlay" id="assign-subject-teacher-modal">
+        <div class="modal" style="max-width:420px">
+            <div class="modal-header">
+                <h3 style="font-size:1rem;font-weight:700">Assign Subject Teacher</h3>
+                <button class="modal-close"
+                    onclick="document.getElementById('assign-subject-teacher-modal').classList.remove('open')">✕</button>
+            </div>
+            <form id="assign-subject-teacher-form">
+                <div class="form-group">
+                    <label class="form-label">Subject *</label>
+                    <select class="form-control" id="ast-subject" required></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Faculty *</label>
+                    <select class="form-control" id="ast-faculty" required></select>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.5rem">
+                    <button type="button" class="btn btn-secondary"
+                        onclick="document.getElementById('assign-subject-teacher-modal').classList.remove('open')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Assign Teacher</button>
                 </div>
             </form>
         </div>
@@ -117,42 +169,53 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
     <script src="/js/utils.js"></script>
     <script src="/js/admin-sidebar.js"></script>
     <script>
         document.getElementById('sidebar-container').innerHTML = buildAdminSidebar('class-faculty');
         document.getElementById('topbar-container').innerHTML = buildAdminTopBar('Class-Faculty Assignments');
 
-        let allFaculty = [], assignments = [], classSubjects = [];
+        let allFaculty = [], assignments = [], classSubjects = [], subjectTeachers = [];
 
         function cls() { return document.getElementById('sel-class').value; }
         function sec() { return document.getElementById('sel-section').value; }
 
         async function load() {
-            [assignments, classSubjects] = await Promise.all([
+            [assignments, classSubjects, subjectTeachers] = await Promise.all([
                 api('GET', `/api/admin/class-faculty?class=${cls()}&section=${sec()}`),
-                api('GET', `/api/admin/subjects?class=${cls()}`)
+                api('GET', `/api/admin/subjects?class=${cls()}`),
+                api('GET', `/api/admin/teacher-assignments?class=${cls()}&section=${sec()}`)
             ]);
             render();
             renderSubjects();
+            renderSubjectTeachers();
         }
 
         function render() {
-            document.getElementById('count').textContent = `${assignments.length} faculty assigned`;
+            document.getElementById('count').textContent = `${assignments.length} class teachers, ${subjectTeachers.length} subject teachers`;
             document.getElementById('tbody').innerHTML = assignments.map(a => `<tr>
       <td><strong>${a.faculty_name}</strong></td>
       <td style="font-size:.85rem">${a.faculty_subject}</td>
       <td>${a.is_class_teacher ? '<span class="badge badge-success">✅ Class Teacher</span>' : '<span style="color:var(--text-muted);font-size:.8rem">—</span>'}</td>
       <td><button class="btn btn-danger btn-sm" onclick="remove(${a.faculty_id})">🗑️ Remove</button></td>
-    </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:2rem">No faculty assigned yet.</td></tr>';
+    </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:1rem">No class teachers assigned yet.</td></tr>';
+        }
+
+        function renderSubjectTeachers() {
+            document.getElementById('subject-teachers-body').innerHTML = subjectTeachers.map(st => `<tr>
+                <td><strong>${st.faculty_name}</strong></td>
+                <td><span style="background:rgba(13,148,136,.1); color:var(--teal); padding: 0.2rem 0.5rem; border-radius:12px; font-weight:600; font-size: 0.85rem">${st.subject_name}</span></td>
+                <td><button class="btn btn-danger btn-sm" onclick="removeSubjectTeacher(${st.id})">🗑️ Remove</button></td>
+            </tr>`).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:1rem">No subject teachers assigned yet.</td></tr>';
         }
 
         function renderSubjects() {
             document.getElementById('subjects-list').innerHTML = classSubjects.map(s =>
-                `<div style="background:rgba(37,99,235,.1);border:1px solid rgba(37,99,235,.2);border-radius:20px;padding:.3rem .8rem;font-size:.8rem;display:flex;align-items:center;gap:.4rem">
-        ${s.name}
-        <button onclick="deleteSubject(${s.id})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:.85rem;padding:0;line-height:1">✕</button>
-      </div>`
+                `<div class="subject-chip">
+    ${s.name}
+    <button onclick="deleteSubject(${s.id})">✕</button>
+</div>`
             ).join('') || '<span style="color:var(--text-muted);font-size:.82rem">No subjects yet.</span>';
         }
 
@@ -160,6 +223,22 @@
             document.getElementById('af-faculty').innerHTML = allFaculty.map(f => `<option value="${f.id}">${f.name} (${f.subject})</option>`).join('');
             document.getElementById('af-ct').checked = false;
             document.getElementById('assign-modal').classList.add('open');
+            
+            if (window.tsAfFaculty) window.tsAfFaculty.destroy();
+            window.tsAfFaculty = new TomSelect('#af-faculty', { create: false, placeholder: 'Search Faculty...' });
+        }
+
+        function openAssignSubjectTeacher() {
+            if (classSubjects.length === 0) {
+                showToast('Please add subjects to this class first.', 'error');
+                return;
+            }
+            document.getElementById('ast-subject').innerHTML = classSubjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+            document.getElementById('ast-faculty').innerHTML = allFaculty.map(f => `<option value="${f.id}">${f.name} (${f.subject})</option>`).join('');
+            document.getElementById('assign-subject-teacher-modal').classList.add('open');
+            
+            if (window.tsAstFaculty) window.tsAstFaculty.destroy();
+            window.tsAstFaculty = new TomSelect('#ast-faculty', { create: false, placeholder: 'Search Faculty...' });
         }
 
         document.getElementById('assign-form').addEventListener('submit', async e => {
@@ -170,16 +249,36 @@
                     faculty_id: document.getElementById('af-faculty').value,
                     is_class_teacher: document.getElementById('af-ct').checked ? 1 : 0
                 });
-                showToast('Faculty assigned!', 'success');
+                showToast('Class Teacher assigned!', 'success');
                 document.getElementById('assign-modal').classList.remove('open');
                 load();
             } catch (err) { showToast(err.message, 'error'); }
         });
 
+        document.getElementById('assign-subject-teacher-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            try {
+                await api('POST', '/api/admin/teacher-assignments', {
+                    class: cls(), section: sec(),
+                    subject_id: document.getElementById('ast-subject').value,
+                    faculty_id: document.getElementById('ast-faculty').value
+                });
+                showToast('Subject Teacher assigned!', 'success');
+                document.getElementById('assign-subject-teacher-modal').classList.remove('open');
+                load();
+            } catch (err) { showToast(err.message, 'error'); }
+        });
+
         async function remove(facultyId) {
-            if (!confirm('Remove this faculty assignment?')) return;
+            if (!confirm('Remove this Class Teacher assignment?')) return;
             await api('DELETE', '/api/admin/class-faculty', { student_class: cls(), student_section: sec(), faculty_id: facultyId });
             showToast('Removed', 'success'); load();
+        }
+
+        async function removeSubjectTeacher(assignmentId) {
+            if (!confirm('Remove this Subject Teacher assignment?')) return;
+            await api('DELETE', `/api/admin/teacher-assignments/${assignmentId}`);
+            showToast('Subject Teacher Removed', 'success'); load();
         }
 
         function openAddSubject() { document.getElementById('subj-name').value = ''; document.getElementById('subject-modal').classList.add('open'); }

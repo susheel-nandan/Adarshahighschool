@@ -40,105 +40,226 @@
 
 <body class="landing-page">
 
-  <nav class="landing-nav">
-    <div class="nav-logo">
-      <div class="icon">🎓</div>
-      <div>
-        <div>Adarsha Portal</div>
-        <div style="font-size:.65rem;color:var(--text-muted);font-weight:400">High School Management System</div>
+  <!-- Sidebar -->
+  <aside class="sidebar closed" id="sidebar">
+    <div class="sidebar-header">
+      <div class="school-logo">
+        <div class="logo-icon">🎓</div>
+        <div class="logo-text">
+          <div class="name">Adarsha Portal</div>
+          <div class="tagline">Welcome!</div>
+        </div>
       </div>
     </div>
-    <div style="display:flex;gap:1rem">
-      <a href="/login.html"><button class="btn btn-secondary">Login</button></a>
-      <a href="/signup.html"><button class="btn btn-primary">Sign Up</button></a>
-    </div>
-  </nav>
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Navigation</div>
+      <a href="/login.html" class="nav-item">
+        <span class="nav-icon">🔑</span>
+        <span>Login</span>
+      </a>
+      <a href="/signup.html" class="nav-item">
+        <span class="nav-icon">📝</span>
+        <span>Sign Up</span>
+      </a>
+    </nav>
+  </aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-  <section class="hero-section animate-up">
-    <span class="hero-badge">🌟 Academic Year 2025–26</span>
-    <h1 class="hero-title">
-      Modern Learning<br />
-      <span class="gradient-text">Powered by Adarsha</span>
-    </h1>
-    <p class="hero-subtitle">
-      Your complete school companion — track attendance, view marks, manage timetables, communicate with faculty, and
-      handle fees all in one secure place.
-    </p>
-    <div class="hero-cta">
-      <a href="/login.html"><button class="btn btn-primary btn-lg">🚀 Student Login</button></a>
-      <a href="/login.html"><button class="btn btn-secondary btn-lg">👨‍👩‍👧 Parent Login</button></a>
-    </div>
-  </section>
+  <div class="main-content expanded">
+    <nav class="landing-nav"
+      style="display:flex; justify-content:space-between; align-items:center; padding: 1rem 2rem;">
+      <div style="display: flex; gap: 1rem; align-items: center;">
+        <button class="menu-toggle" onclick="toggleSidebar()" style="font-size:1.8rem; cursor:pointer;">☰</button>
+        <div class="nav-logo">
+          <div class="icon">🎓</div>
+          <div>
+            <div>Adarsha Portal</div>
+            <div style="font-size:.65rem;color:var(--text-muted);font-weight:400">High School Management System</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:1rem;align-items:center">
+        <div id="theme-toggle-container"></div>
+        <a href="/login.html"><button class="btn btn-secondary">Login</button></a>
+        <a href="/signup.html"><button class="btn btn-primary">Sign Up</button></a>
+      </div>
+    </nav>
+    <script>
+      // Insert theme toggle dynamically since utils.js has the function
+      document.addEventListener('DOMContentLoaded', () => {
+        const scriptCheck = setInterval(() => {
+          if (typeof getThemeToggleHTML === 'function') {
+            document.getElementById('theme-toggle-container').innerHTML = getThemeToggleHTML();
+            clearInterval(scriptCheck);
+          }
+        }, 50);
+      });
+    </script>
+    <section class="hero animate-up">
+      <div class="hero-glass">
+        <span class="hero-badge">🌟 Academic Year 2026–27</span>
+        <h1 class="hero-title">
+          Student Tracking<br />
+          <span class="gradient-text">by Adarsha High School</span>
+        </h1>
+        <p class="hero-subtitle">
 
-  <div style="display:flex;justify-content:center;padding:0 1.5rem">
-    <div class="stats-strip animate-fade">
-      <div class="strip-stat">
-        <div class="s-num">250+</div>
-        <div class="s-label">Students</div>
+        </p>
+        <p class="hero-subtitle">
+          Your complete school companion — track attendance, view marks, check timetables, and communicate with faculty
+          all in one secure place.
+          The Student Portal provides instant access to academic records, attendance reports, exam schedules, and school
+          updates. Students and parents can easily monitor progress, stay informed about upcoming events, and maintain
+          seamless communication with teachers and school administration.
+        </p>
       </div>
-      <div class="strip-stat">
-        <div class="s-num">35+</div>
-        <div class="s-label">Faculty</div>
-      </div>
-      <div class="strip-stat">
-        <div class="s-num">5</div>
-        <div class="s-label">Classes (6–10)</div>
-      </div>
-      <div class="strip-stat">
-        <div class="s-num">8+</div>
-        <div class="s-label">Years of Excellence</div>
+    </section>
+
+    <div style="display:flex;justify-content:center;padding:0 1.5rem">
+      <div class="stats-strip animate-fade">
+        <div class="strip-stat">
+          <div class="s-num">250+</div>
+          <div class="s-label">Students</div>
+        </div>
+        <div class="strip-stat">
+          <div class="s-num">35+</div>
+          <div class="s-label">Faculty</div>
+        </div>
+        <div class="strip-stat">
+          <div class="s-num">5</div>
+          <div class="s-label">Classes (6–10)</div>
+        </div>
+        <div class="strip-stat">
+          <div class="s-num">8+</div>
+          <div class="s-label">Years of Excellence</div>
+        </div>
       </div>
     </div>
+
+    <section class="features-section">
+      <h2 class="text-center section-heading" style="justify-content:center;font-size:1.5rem;margin-bottom:0.5rem">
+        Everything You Need</h2>
+      <p class="text-center" style="color:var(--text-secondary);margin-bottom:2rem">Features built for students and
+        parents</p>
+      <div class="features-grid">
+        <div class="feature-card animate-fade">
+          <div class="feature-title">Academic Tracking</div>
+          <div class="feature-desc">View subject-wise marks, calculated percentages, grades, and dynamic class rank
+            updated in real-time.</div>
+        </div>
+        <div class="feature-card animate-fade">
+          <div class="feature-title">Smart Scheduling</div>
+          <div class="feature-desc">Access your daily timetable, school calendar, exam schedule and never miss an
+            important date.</div>
+        </div>
+        <div class="feature-card animate-fade">
+          <div class="feature-title">Attendance Monitor</div>
+          <div class="feature-desc">Track daily attendance with calendar view and monitor overall attendance percentage.
+          </div>
+        </div>
+        <div class="feature-card animate-fade">
+          <div class="feature-title">Faculty Connect</div>
+          <div class="feature-desc">Direct WhatsApp and phone access to all assigned teachers with one click.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="about-section"
+      style="padding: 4rem 2rem; background: var(--bg-surface); color: var(--text-primary-dark);">
+      <div style="max-width: 1200px; margin: 0 auto;">
+        <h2 class="text-center section-heading"
+          style="justify-content:center;font-size:1.8rem;margin-bottom:1rem; color: var(--primary);">About Adarsha High
+          School</h2>
+        <p class="text-center" style="max-width: 800px; margin: 0 auto 3rem auto; color: var(--text-secondary);">Founded
+          in <strong>2018</strong>, Adarsha High School has been paving the path for strong academic achievements and
+          character building. We pride ourselves on producing students with consistently good grades and all-round
+          excellence.</p>
+
+        <div
+          style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+          <div class="card animate-fade">
+            <h3 style="color: var(--primary); margin-bottom: 0.5rem;">Why Join Us?</h3>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">Our school offers an
+              innovative
+              curriculum blended with rich extracurricular programs. With a student-centric methodology, personalized
+              attention, modern facilities, and an environment of inclusivity, we provide the best platform for students
+              to succeed, grow, and become leaders of tomorrow.</p>
+          </div>
+          <div class="card animate-fade">
+            <h3 style="color: var(--primary); margin-bottom: 0.5rem;">Academic Excellence</h3>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">Our focus on comprehensive
+              education has resulted in exceptional outcomes. Since 2018, a vast majority of our passed-out students
+              have
+              secured outstanding grades in board exams, winning regional and state-level accolades and entering
+              top-tier
+              higher education institutions.</p>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem;">
+          <div class="card animate-fade">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">Our Top Faculty</h3>
+            <ul style="color: var(--text-secondary); font-size: 0.9rem; list-style-type: none; padding: 0;">
+              <li style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border);">
+                <strong>Mr. Prasad</strong><br /><span style="font-size: 0.8rem;">IIT Mathematics (15+ yrs
+                  exp)</span>
+              </li>
+              <li style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border);">
+                <strong>Mr. T. Narsimha Rao</strong><br /><span style="font-size: 0.8rem;"> IIT Physics (20+ yrs
+                  )</span>
+              </li>
+              <li><strong>Mr. Shiva Nageshwar Rao</strong><br /><span style="font-size: 0.8rem;">IIT Chemistry (20+ yrs
+                  )</span></li>
+            </ul>
+          </div>
+          <div class="card animate-fade"
+            style="text-align: center; display: flex; flex-direction: column; justify-content: center;">
+            <div
+              style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent)); margin: 0 auto 1rem auto; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white; font-family: 'Outfit'; font-weight: bold;">
+              SNR</div>
+            <h3 style="color: var(--primary); margin-bottom: 0.2rem;">Mr. Shiva Nageshwar Rao</h3>
+            <p style="color: var(--teal); font-size: 0.8rem; font-weight: bold;">School Director</p>
+            <div
+              style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent)); margin: 0 auto 1rem auto; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white; font-family: 'Outfit'; font-weight: bold;">
+              TNR</div>
+            <h3 style="color: var(--primary); margin-bottom: 0.2rem;">Mr. T. Narsimha Rao</h3>
+            <p style="color: var(--teal); font-size: 0.8rem; font-weight: bold;">School Director</p>
+
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 1rem; font-style: italic;">"We
+              strive
+              for continuous growth and aim to sculpt the global citizens of tomorrow. Education at Adarsha is not just
+              about books, but about building a vibrant future."</p>
+          </div>
+        </div>
+
+        <div class="card animate-up"
+          style="background: var(--bg-dark); padding: 2.5rem; margin-top: 3rem; text-align: center;">
+          <h3 style="color: var(--primary); margin-bottom: 1.5rem; font-size: 1.5rem;">Contact Us & Location</h3>
+          <p style="color: var(--text-secondary); font-size: 1rem; margin-bottom: 0.5rem;">📍 <strong>Address:</strong>
+            Excise Colony, Near Rythu Bazar, Hanamkonda.</p>
+          <p style="color: var(--text-secondary); font-size: 1rem; margin-bottom: 0.5rem;">📞 <strong>Phone:</strong>
+            +91
+            9985648210</p>
+          <p style="color: var(--text-secondary); font-size: 1rem; margin-bottom: 2rem;">✉️ <strong>Email:</strong>
+            [EMAIL_ADDRESS]</p>
+
+          <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+            <a href="https://www.instagram.com/nageshwarraotuitionshunterroad/" target="_blank"
+              class="btn btn-secondary">
+              Instagram</a>
+            <a href="https://facebook.com/adarshaschool" target="_blank" class="btn btn-secondary">Facebook</a>
+            <a href="https://twitter.com/adarshaschool" target="_blank" class="btn btn-secondary">Twitter</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="landing-footer">
+      <p>© 2026 Adarsha High School. Built with love for students and parents.</p>
+    </footer>
   </div>
 
-  <section class="features-section">
-    <h2 class="text-center section-heading" style="justify-content:center;font-size:1.5rem;margin-bottom:0.5rem">
-      Everything You Need</h2>
-    <p class="text-center" style="color:var(--text-secondary);margin-bottom:2rem">Features built for students and
-      parents</p>
-    <div class="features-grid">
-      <div class="feature-card animate-fade">
-        <div class="feature-icon">📊</div>
-        <div class="feature-title">Academic Tracking</div>
-        <div class="feature-desc">View subject-wise marks, calculated percentages, grades, and dynamic class rank
-          updated in real-time.</div>
-      </div>
-      <div class="feature-card animate-fade">
-        <div class="feature-icon">📅</div>
-        <div class="feature-title">Smart Scheduling</div>
-        <div class="feature-desc">Access your daily timetable, school calendar, exam schedule and never miss an
-          important date.</div>
-      </div>
-      <div class="feature-card animate-fade">
-        <div class="feature-icon">✅</div>
-        <div class="feature-title">Attendance Monitor</div>
-        <div class="feature-desc">Track daily attendance with calendar view and monitor overall attendance percentage.
-        </div>
-      </div>
-      <div class="feature-card animate-fade">
-        <div class="feature-icon">💬</div>
-        <div class="feature-title">Faculty Connect</div>
-        <div class="feature-desc">Direct WhatsApp and phone access to all assigned teachers with one click.</div>
-      </div>
-      <div class="feature-card animate-fade">
-        <div class="feature-icon">💰</div>
-        <div class="feature-title">Fee Management</div>
-        <div class="feature-desc">Parents can view payment history, check pending dues, and make secure online payments.
-        </div>
-      </div>
-      <div class="feature-card animate-fade">
-        <div class="feature-icon">📝</div>
-        <div class="feature-title">Leave Requests</div>
-        <div class="feature-desc">Submit leave requests that are automatically formatted into professional letters for
-          class teachers.</div>
-      </div>
-    </div>
-  </section>
-
-  <footer class="landing-footer">
-    <p>© 2026 Adarsha High School. Built with ❤️ for students and parents.</p>
-  </footer>
-
+  <script src="/js/utils.js"></script>
 </body>
 
 </html>

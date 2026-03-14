@@ -36,6 +36,28 @@
                     <div id="info-rows"></div>
                 </div>
 
+
+
+                <div class="card" style="margin-bottom:1.25rem">
+                    <div class="section-title"
+                        style="font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:1rem">
+                        🪪 Change Teacher ID</div>
+                    <form id="id-form">
+                        <div class="form-group">
+                            <label class="form-label">New Teacher ID</label>
+                            <input class="form-control" id="new-id" placeholder="e.g. TCH002" required />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Current Password (to confirm)</label>
+                            <input class="form-control" id="id-pwd" type="password" placeholder="Enter current password"
+                                required />
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="id-btn">Update Teacher ID</button>
+                    </form>
+                </div>
+
+
+
                 <div class="card">
                     <div class="section-title"
                         style="font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:1rem">
@@ -69,6 +91,24 @@
         document.getElementById('sidebar-container').innerHTML = buildTeacherSidebar('profile');
         document.getElementById('topbar-container').innerHTML = buildTeacherTopBar('My Profile');
 
+        document.getElementById('id-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            const newId = document.getElementById('new-id').value.trim();
+            const pwd = document.getElementById('id-pwd').value;
+            if (!newId) return showToast('Enter new Teacher ID', 'error');
+            const btn = document.getElementById('id-btn');
+            btn.textContent = 'Updating...'; btn.disabled = true;
+            try {
+                await api('PUT', '/api/teacher/profile', { new_id: newId, current_password: pwd });
+                showToast('✅ Teacher ID updated successfully!', 'success');
+                document.getElementById('id-form').reset();
+                // Optionally reload page to reflect new ID everywhere, or just reload profile
+                window.location.reload();
+            } catch (err) { showToast(err.message, 'error'); }
+            finally { btn.textContent = 'Update Teacher ID'; btn.disabled = false; }
+        });
+
+        // Use the new /profile endpoint instead of /change-password to keep things uniform
         document.getElementById('pwd-form').addEventListener('submit', async e => {
             e.preventDefault();
             const op = document.getElementById('old-pwd').value;
@@ -79,7 +119,7 @@
             const btn = document.getElementById('pwd-btn');
             btn.textContent = 'Saving...'; btn.disabled = true;
             try {
-                await api('PUT', '/api/teacher/change-password', { old_password: op, new_password: np });
+                await api('PUT', '/api/teacher/profile', { current_password: op, new_password: np });
                 showToast('✅ Password updated!', 'success');
                 document.getElementById('pwd-form').reset();
             } catch (err) { showToast(err.message, 'error'); }
@@ -93,6 +133,7 @@
             document.getElementById('p-tid').textContent = profile.teacher_id;
             document.getElementById('p-sub').textContent = profile.subject;
             document.getElementById('p-av').textContent = profile.name[0].toUpperCase();
+            document.getElementById('new-id').placeholder = `e.g. NEW_${profile.teacher_id}`;
             document.getElementById('info-rows').innerHTML = [
                 ['Subject', profile.subject],
                 ['Teacher ID', profile.teacher_id],

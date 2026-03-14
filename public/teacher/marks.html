@@ -48,25 +48,14 @@
             <div id="topbar-container"></div>
             <div class="page-content animate-fade">
 
+                <button class="btn btn-sm" id="btn-back"
+                    style="margin-bottom:1rem; background:rgba(255,255,255,0.7); color:#333; border:none;">← Back to
+                    Class Hub</button>
+
                 <!-- Filters -->
                 <div class="card" style="margin-bottom:1.25rem">
-                    <div class="card-title" style="margin-bottom:1rem">🔍 Select Class & Exam</div>
+                    <div class="card-title" style="margin-bottom:1rem">🔍 Select Exam</div>
                     <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center">
-                        <div>
-                            <label class="form-label">Class</label>
-                            <select class="form-control" id="sel-class" onchange="onClassChange()"
-                                style="min-width:110px">
-                                <option value="">— Class —</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="form-label">Section</label>
-                            <select class="form-control" id="sel-section" onchange="loadMarks()" style="min-width:90px">
-                                <option value="A">A</option>
-                                <option value="B">B</option>
-                                <option value="C">C</option>
-                            </select>
-                        </div>
                         <div>
                             <label class="form-label">Exam Type</label>
                             <select class="form-control" id="sel-exam" onchange="loadMarks()" style="min-width:120px">
@@ -81,8 +70,8 @@
                             <button class="btn btn-primary" onclick="loadMarks()">Load Students</button>
                         </div>
                     </div>
-                    <div id="class-info-bar"
-                        style="display:none;margin-top:.75rem;font-size:.82rem;color:var(--text-muted)"></div>
+                    <div id="class-info-bar" style="margin-top:.75rem;font-size:.82rem;color:var(--text-muted)">Loading
+                        context...</div>
                 </div>
 
                 <!-- Marks table -->
@@ -129,8 +118,8 @@
         document.getElementById('sidebar-container').innerHTML = buildTeacherSidebar('marks');
         document.getElementById('topbar-container').innerHTML = buildTeacherTopBar('Enter Marks');
 
-        let assignedClasses = [];
         let rows = [];
+        let class_id, section, subject_id, className, subjectName;
 
         function grade(pct) {
             if (pct >= 90) return '<span class="grade-A">A+</span>';
@@ -183,37 +172,24 @@
             }).join('');
         }
 
-        async function onClassChange() {
-            await loadMarks();
-        }
-
         async function loadMarks() {
-            const cls = document.getElementById('sel-class').value;
-            const sec = document.getElementById('sel-section').value;
             const exam = document.getElementById('sel-exam').value;
-            if (!cls) return;
 
             document.getElementById('marks-card').style.display = '';
             document.getElementById('marks-body').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem">Loading...</td></tr>';
 
-            const data = await api('GET', `/api/teacher/marks?class=${cls}&section=${sec}&exam_type=${exam}`).catch(e => {
+            const data = await api('GET', `/api/teacher/marks?class_id=${class_id}&section=${section}&subject_id=${subject_id}&exam_type=${exam}`).catch(e => {
                 showToast(e.message || 'Failed to load', 'error'); return null;
             });
             if (!data) return;
 
-            document.getElementById('marks-title').textContent =
-                `📚 ${data.subject_name} — Class ${cls}${sec} — ${exam}`;
-            document.getElementById('class-info-bar').style.display = '';
-            document.getElementById('class-info-bar').textContent =
-                `${data.students.length} students · Subject: ${data.subject_name}`;
+            document.getElementById('marks-title').textContent = `📚 ${subjectName} — ${className} ${section} — ${exam}`;
+            document.getElementById('class-info-bar').textContent = `${data.students.length} students · Subject: ${subjectName}`;
             renderRows(data.students);
         }
 
         async function saveMarks() {
-            const cls = document.getElementById('sel-class').value;
-            const sec = document.getElementById('sel-section').value;
             const exam = document.getElementById('sel-exam').value;
-            if (!cls) { showToast('Select a class first', 'error'); return; }
 
             const entries = rows.map(s => ({
                 student_id: s.student_id,
@@ -222,7 +198,7 @@
             }));
 
             try {
-                await api('POST', '/api/teacher/marks/bulk', { class: cls, section: sec, exam_type: exam, entries });
+                await api('POST', '/api/teacher/marks/bulk', { class_id, section, subject_id, exam_type: exam, entries });
                 showToast('✅ Marks saved successfully!', 'success');
                 document.querySelectorAll('.modified-row').forEach(r => r.classList.remove('modified-row'));
             } catch (e) { showToast(e.message, 'error'); }
@@ -246,15 +222,23 @@
 
         (async () => {
             await initTeacherPage();
-            assignedClasses = await api('GET', '/api/teacher/classes').catch(() => []);
-            const sel = document.getElementById('sel-class');
-            if (!assignedClasses.length) {
-                sel.innerHTML = '<option value="">No classes assigned</option>';
-            } else {
-                sel.innerHTML = '<option value="">— Select Class —</option>' +
-                    [...new Set(assignedClasses.map(c => c.class))].sort()
-                        .map(c => `<option value="${c}">Class ${c}</option>`).join('');
+
+            const params = new URLSearchParams(window.location.search);
+            class_id = params.get('class_id');
+            section = params.get('section');
+            subject_id = params.get('subject_id');
+            className = params.get('class_name') || `Class ${class_id}`;
+            subjectName = params.get('subject_name') || `Subject ${subject_id}`;
+
+            if (!class_id || !subject_id) {
+                showToast('Invalid context. Please go back to Dashboard.', 'error');
+                return;
             }
+
+            document.getElementById('class-info-bar').textContent = `${className} - ${section} | ${subjectName}`;
+            document.getElementById('btn-back').onclick = () => window.location.href = `/teacher/class-dashboard.html${window.location.search}`;
+
+            await loadMarks();
             hideLoader();
         })();
     </script>

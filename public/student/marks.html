@@ -23,9 +23,9 @@
                     <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">
                         <div style="font-size:3rem">🏆</div>
                         <div>
-                            <div style="font-family:'Outfit';font-size:2rem;font-weight:800;line-height:1"
+                            <div style="font-family:'Outfit';font-size:1.5rem;font-weight:800;line-height:1"
                                 id="rank-display">—</div>
-                            <div style="color:var(--text-secondary);font-size:.85rem">Class Rank (FA1)</div>
+                            <div style="color:var(--text-secondary);font-size:.85rem">Gen & IIT Ranks</div>
                         </div>
                         <div style="margin-left:auto;text-align:right">
                             <div id="overall-pct"
@@ -96,8 +96,7 @@
             await initStudentPage();
             const data = await api('GET', '/api/student/marks');
             allMarks = data.marks;
-
-            document.getElementById('rank-display').textContent = `#${data.rank} of ${data.totalStudents}`;
+            document.getElementById('rank-display').innerHTML = `<span style="font-size:1rem;color:var(--text-secondary)">Gen:</span> <span class="rank-number">${data.generalRank || '-'}</span>&nbsp;<span style="font-size:1rem;color:var(--text-secondary)">IIT:</span> <span class="rank-number">${data.iitRank || '-'}</span>`;
 
             // Exam type tabs
             document.getElementById('exam-tabs').innerHTML = data.examTypes.map(t => `

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Login — Adarsha High School Portal</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body class="auth-page">
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="auth-card animate-up" style="border-top: 4px solid #dc3545;">
+        <div style="text-align:center;margin-bottom:1.75rem">
+            <div
+                style="width:56px;height:56px;background:linear-gradient(135deg,#dc3545,#c82333);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin:0 auto 0.75rem">
+                🛡️</div>
+            <h1 style="font-size:1.5rem;font-weight:800;margin-bottom:0.2rem">Admin Access</h1>
+            <p style="color:var(--text-secondary);font-size:0.875rem">Restricted Area</p>
+        </div>
+        <form id="admin-login-form">
+            <div class="form-group">
+                <label class="form-label" id="id-label">Admin ID</label>
+                <input class="form-control" id="user-id" type="text" placeholder="e.g. ADMIN001" required />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <div style="position:relative">
+                    <input class="form-control" id="password" type="password" placeholder="Enter your password" required
+                        style="padding-right:3rem" />
+                    <button type="button" onclick="togglePwd()"
+                        style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);font-size:1rem;cursor:pointer">👁</button>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-full btn-lg" id="login-btn"
+                style="margin-top:1rem;background-color:#dc3545;border-color:#dc3545">Secure Login</button>
+        </form>
+    </div>
+    <script src="/js/utils.js"></script>
+    <script>
+        function togglePwd() {
+            const inp = document.getElementById('password');
+            inp.type = inp.type === 'password' ? 'text' : 'password';
+        }
+
+        document.getElementById('admin-login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('login-btn');
+            btn.textContent = 'Authenticating...';
+            btn.disabled = true;
+            try {
+                const res = await api('POST', '/api/auth/login', {
+                    role: 'admin',
+                    id: document.getElementById('user-id').value.trim(),
+                    password: document.getElementById('password').value
+                });
+                showToast(`Welcome Admin! 👋`, 'success');
+                setTimeout(() => {
+                    window.location.href = '/admin/dashboard.html';
+                }, 800);
+            } catch (e) {
+                showToast(e.message, 'error');
+                btn.textContent = 'Secure Login';
+                btn.disabled = false;
+            }
+        });
+
+        // Hide loader
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loader = document.getElementById('page-loader');
+                if (loader) loader.style.opacity = '0';
+                setTimeout(() => {
+                    if (loader) loader.style.display = 'none';
+                }, 300);
+            }, 100);
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Complaints Management — Admin Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css" />
+    <style>
+        /* ─── Page Header ───────────────────────────────────────────────── */
+        .complaints-header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, rgba(139, 30, 63, 0.08), rgba(230, 194, 74, 0.04));
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid rgba(139, 30, 63, 0.12);
+        }
+
+        .complaints-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin: 0;
+        }
+
+        .complaints-title .title-icon {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            box-shadow: 0 4px 12px rgba(139, 30, 63, 0.25);
+            flex-shrink: 0;
+        }
+
+        /* ─── Summary Stats ─────────────────────────────────────────────── */
+        .complaint-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .c-stat {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .c-stat::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .c-stat.c-total::before {
+            background: var(--primary);
+        }
+
+        .c-stat.c-pending::before {
+            background: var(--warning);
+        }
+
+        .c-stat.c-progress::before {
+            background: var(--info);
+        }
+
+        .c-stat.c-resolved::before {
+            background: var(--success);
+        }
+
+        .c-stat:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .c-stat .c-num {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1;
+        }
+
+        .c-stat .c-label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-top: 0.3rem;
+        }
+
+        /* ─── Tabs ──────────────────────────────────────────────────────── */
+        .tabs-container {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            background: var(--bg-surface);
+            padding: 0.35rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 0.7rem 1rem;
+            border: none;
+            background: transparent;
+            border-radius: 10px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+            background: rgba(139, 30, 63, 0.04);
+        }
+
+        .tab-btn.active {
+            background: var(--bg-card);
+            color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .tab-badge {
+            background: rgba(139, 30, 63, 0.1);
+            color: var(--primary);
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.15rem 0.5rem;
+            border-radius: 10px;
+            min-width: 22px;
+            text-align: center;
+        }
+
+        .tab-btn.active .tab-badge {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* ─── Complaint Cards ───────────────────────────────────────────── */
+        .complaint-card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 14px;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+            animation: cardFade 0.35s ease forwards;
+            opacity: 0;
+        }
+
+        @keyframes cardFade {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .complaint-card:nth-child(1) {
+            animation-delay: 0.05s;
+        }
+
+        .complaint-card:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .complaint-card:nth-child(3) {
+            animation-delay: 0.15s;
+        }
+
+        .complaint-card:nth-child(4) {
+            animation-delay: 0.2s;
+        }
+
+        .complaint-card:nth-child(5) {
+            animation-delay: 0.25s;
+        }
+
+        .complaint-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            border-color: rgba(139, 30, 63, 0.15);
+        }
+
+        .complaint-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            border-radius: 4px 0 0 4px;
+        }
+
+        .complaint-card.status-Pending::before {
+            background: linear-gradient(180deg, var(--warning), #f97316);
+        }
+
+        .complaint-card.status-In-Progress::before {
+            background: linear-gradient(180deg, var(--info), #6366f1);
+        }
+
+        .complaint-card.status-Resolved::before {
+            background: linear-gradient(180deg, var(--success), #06d6a0);
+        }
+
+        .complaint-card.admin-notice {
+            border-color: rgba(239, 68, 68, 0.15);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.02), transparent);
+        }
+
+        .complaint-card.admin-notice::before {
+            background: linear-gradient(180deg, var(--danger), #dc2626) !important;
+        }
+
+        /* Card top row */
+        .card-top {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .notice-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 0.2rem 0.55rem;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            white-space: nowrap;
+        }
+
+        .status-badge.s-pending {
+            background: rgba(245, 158, 11, 0.12);
+            color: #d97706;
+            border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+
+        .status-badge.s-progress {
+            background: rgba(59, 130, 246, 0.12);
+            color: #2563eb;
+            border: 1px solid rgba(59, 130, 246, 0.25);
+        }
+
+        .status-badge.s-resolved {
+            background: rgba(16, 185, 129, 0.12);
+            color: #059669;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        /* Meta Grid */
+        .card-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.75rem;
+            background: var(--bg-surface);
+            padding: 0.85rem 1rem;
+            border-radius: 10px;
+            font-size: 0.82rem;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.45rem;
+            color: var(--text-secondary);
+            line-height: 1.45;
+        }
+
+        .meta-item .m-icon {
+            font-size: 0.95rem;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .meta-item strong {
+            display: block;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.78rem;
+            margin-bottom: 0.1rem;
+        }
+
+        /* Description */
+        .card-desc {
+            font-size: 0.92rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            padding: 0.75rem 1rem;
+            background: rgba(0, 0, 0, 0.015);
+            border-radius: 10px;
+            border-left: 3px solid var(--border);
+        }
+
+        /* Reply Box */
+        .reply-box {
+            background: rgba(139, 30, 63, 0.04);
+            border: 1px solid rgba(139, 30, 63, 0.1);
+            padding: 0.85rem 1rem;
+            border-radius: 10px;
+        }
+
+        .reply-box .reply-label {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.35rem;
+        }
+
+        .reply-box .reply-text {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+
+        .awaiting-msg {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            font-style: italic;
+            padding: 0.65rem 1rem;
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 8px;
+            border: 1px dashed var(--border);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .needs-response {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: rgba(245, 158, 11, 0.1);
+            color: #d97706;
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+        }
+
+        /* Action Footer */
+        .card-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 0.85rem;
+            border-top: 1px solid var(--border);
+            margin-top: auto;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .empty-state .empty-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(6, 214, 160, 0.08));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            margin: 0 auto 1.25rem;
+        }
+
+        .empty-state h3 {
+            font-size: 1.15rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .empty-state p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* ─── Modal Polish ──────────────────────────────────────────────── */
+        .modal-header-custom {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-header-custom .m-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .modal-header-custom h3 {
+            margin: 0;
+            font-size: 1.15rem;
+        }
+
+        .modal-header-custom p {
+            margin: 0.15rem 0 0;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* ─── Mobile ────────────────────────────────────────────────────── */
+        @media (max-width: 640px) {
+            .complaints-header {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 1.25rem;
+                gap: 0.75rem;
+            }
+
+            .complaints-header .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .complaint-stats {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+            }
+
+            .c-stat {
+                padding: 0.75rem;
+            }
+
+            .c-stat .c-num {
+                font-size: 1.3rem;
+            }
+
+            .tabs-container {
+                border-radius: 10px;
+            }
+
+            .tab-btn {
+                padding: 0.6rem 0.5rem;
+                font-size: 0.78rem;
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+
+            .complaint-card {
+                padding: 1.25rem 1rem;
+                border-radius: 12px;
+            }
+
+            .card-top {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .card-meta {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+                padding: 0.65rem 0.8rem;
+            }
+
+            .card-desc {
+                padding: 0.6rem 0.8rem;
+                font-size: 0.88rem;
+            }
+
+            .card-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .card-actions .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .modal {
+                margin: 0.5rem;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="page-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="app-layout">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div id="topbar-container"></div>
+            <div class="page-content animate-fade">
+                <div style="max-width: 900px; margin: 0 auto; width: 100%;">
+
+                    <!-- Header -->
+                    <div class="complaints-header">
+                        <h2 class="complaints-title">
+                            <span class="title-icon">📢</span>
+                            Manage Complaints & Notices
+                        </h2>
+                        <button class="btn btn-danger" onclick="showNewNoticeModal()"
+                            style="display:flex;align-items:center;gap:0.5rem;box-shadow:0 4px 12px rgba(239,68,68,0.2)">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"
+                                viewBox="0 0 24 24">
+                                <path d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            Issue Notice
+                        </button>
+                    </div>
+
+                    <!-- Summary Stats -->
+                    <div class="complaint-stats" id="complaint-stats"></div>
+
+                    <!-- Tabs -->
+                    <div class="tabs-container">
+                        <button class="tab-btn active" id="tab-complaints"
+                            onclick="switchTab('parent-complaints', this)">
+                            👥 Parent Complaints <span class="tab-badge" id="badge-complaints">0</span>
+                        </button>
+                        <button class="tab-btn" id="tab-notices" onclick="switchTab('admin-notices', this)">
+                            ⚠️ Admin Notices <span class="tab-badge" id="badge-notices">0</span>
+                        </button>
+                    </div>
+
+                    <!-- Parent Complaints Tab -->
+                    <div id="parent-complaints" class="tab-pane" style="display:block">
+                        <div id="complaints-list"></div>
+                    </div>
+
+                    <!-- Admin Notices Tab -->
+                    <div id="admin-notices" class="tab-pane" style="display:none">
+                        <div id="notices-list"></div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Issue Notice Modal -->
+    <div class="modal-overlay" id="modal-new-notice">
+        <div class="modal" style="max-width:520px">
+            <div class="modal-header-custom">
+                <div class="m-icon" style="background:rgba(239,68,68,0.1);color:var(--danger)">⚠️</div>
+                <div>
+                    <h3 style="color:var(--danger)">Issue Disciplinary Notice</h3>
+                    <p>This notice will appear in the parent's portal</p>
+                </div>
+            </div>
+            <form id="form-notice" onsubmit="submitNotice(event)">
+                <div class="form-group">
+                    <label class="form-label">Select Student</label>
+                    <select id="notice-student" class="input w-full" required>
+                        <option value="">Loading students...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Subject / Infraction</label>
+                    <input type="text" id="notice-subject" class="input w-full" required
+                        placeholder="E.g., Repeated Tardiness, Code of Conduct Violation">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description Details</label>
+                    <textarea id="notice-desc" class="input w-full" rows="5" required
+                        placeholder="Describe the infraction in detail..."></textarea>
+                </div>
+                <div style="display:flex;justify-content:flex-end;gap:0.75rem;margin-top:1.5rem">
+                    <button type="button" class="btn btn-secondary"
+                        onclick="closeModal('modal-new-notice')">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Issue Notice</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Manage Modal -->
+    <div class="modal-overlay" id="modal-manage">
+        <div class="modal" style="max-width:520px">
+            <div class="modal-header-custom">
+                <div class="m-icon" style="background:rgba(139,30,63,0.1);color:var(--primary)">⚙️</div>
+                <div>
+                    <h3>Manage Complaint</h3>
+                    <p>Update status and add an official reply</p>
+                </div>
+            </div>
+            <form id="form-manage" onsubmit="updateComplaint(event)">
+                <input type="hidden" id="manage-cid">
+                <div class="form-group">
+                    <label class="form-label">Update Status</label>
+                    <select id="manage-status" class="input w-full">
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Resolved">Resolved</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Official Reply / Note</label>
+                    <textarea id="manage-reply" class="input w-full" rows="4"
+                        placeholder="Type your response to the parent..."></textarea>
+                </div>
+                <div style="display:flex;justify-content:flex-end;gap:0.75rem;margin-top:1.5rem">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('modal-manage')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/admin-sidebar.js"></script>
+    <script>
+        document.getElementById('sidebar-container').innerHTML = buildAdminSidebar('complaints');
+        document.getElementById('topbar-container').innerHTML = buildAdminTopBar('Complaints');
+
+        let allComplaints = [];
+
+        async function loadContent() {
+            const session = await initAdminPage();
+            if (!session) return;
+
+            try {
+                allComplaints = await api('GET', '/api/admin/complaints');
+                renderStats();
+                renderTabs();
+            } catch (e) {
+                showToast('Failed to load complaints', 'error');
+            }
+            hideLoader();
+            window.closeSidebar();
+        }
+
+        function renderStats() {
+            const total = allComplaints.length;
+            const pending = allComplaints.filter(c => c.status === 'Pending').length;
+            const progress = allComplaints.filter(c => c.status === 'In Progress').length;
+            const resolved = allComplaints.filter(c => c.status === 'Resolved').length;
+
+            document.getElementById('complaint-stats').innerHTML = `
+                <div class="c-stat c-total">
+                    <div class="c-num">${total}</div>
+                    <div class="c-label">Total</div>
+                </div>
+                <div class="c-stat c-pending">
+                    <div class="c-num">${pending}</div>
+                    <div class="c-label">Pending</div>
+                </div>
+                <div class="c-stat c-progress">
+                    <div class="c-num">${progress}</div>
+                    <div class="c-label">In Progress</div>
+                </div>
+                <div class="c-stat c-resolved">
+                    <div class="c-num">${resolved}</div>
+                    <div class="c-label">Resolved</div>
+                </div>
+            `;
+        }
+
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-pane').forEach(c => c.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).style.display = 'block';
+            if (btn) btn.classList.add('active');
+        }
+
+        function renderTabs() {
+            const parentComplaints = allComplaints.filter(c => c.raised_by === 'parent');
+            const adminNotices = allComplaints.filter(c => c.raised_by === 'admin');
+
+            document.getElementById('badge-complaints').textContent = parentComplaints.length;
+            document.getElementById('badge-notices').textContent = adminNotices.length;
+
+            renderList(document.getElementById('complaints-list'), parentComplaints, false);
+            renderList(document.getElementById('notices-list'), adminNotices, true);
+        }
+
+        function renderList(container, items, isNotice) {
+            if (!items.length) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">✅</div>
+                        <h3>No ${isNotice ? 'Notices' : 'Complaints'}</h3>
+                        <p>There are currently no records here.</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = items.map((c, i) => {
+                const dateStr = new Date(c.created_at).toLocaleDateString('en-IN', {
+                    year: 'numeric', month: 'short', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+
+                // Status badge
+                let badgeCls = 's-pending', badgeDot = '🟡';
+                if (c.status === 'In Progress') { badgeCls = 's-progress'; badgeDot = '🔵'; }
+                if (c.status === 'Resolved') { badgeCls = 's-resolved'; badgeDot = '🟢'; }
+
+                // Action / reply HTML
+                let actionHtml = '';
+                if (isNotice) {
+                    if (c.reply) {
+                        actionHtml = `
+                        <div class="reply-box">
+                            <div class="reply-label">👤 Parent Reply</div>
+                            <div class="reply-text">${c.reply}</div>
+                        </div>`;
+                    } else {
+                        actionHtml = `<div class="awaiting-msg">⏳ Awaiting parent acknowledgment</div>`;
+                    }
+                    if (c.status !== 'Resolved') {
+                        actionHtml += `
+                        <div class="card-actions">
+                            <div style="flex:1"></div>
+                            <button class="btn btn-primary btn-sm" onclick='showManageModal(${JSON.stringify(c).replace(/'/g, "&#39;")})'>
+                                ⚙️ Update Status
+                            </button>
+                        </div>`;
+                    }
+                } else {
+                    actionHtml = `
+                    <div class="card-actions">
+                        <div style="flex:1">
+                            ${c.reply
+                            ? `<div class="reply-box" style="margin:0">
+                                        <div class="reply-label">🏫 Your Reply</div>
+                                        <div class="reply-text">${c.reply}</div>
+                                   </div>`
+                            : '<span class="needs-response">⚡ Needs Response</span>'
+                        }
+                        </div>
+                        <button class="btn btn-secondary btn-sm" onclick='showManageModal(${JSON.stringify(c).replace(/'/g, "&#39;")})'>
+                            ⚙️ Manage
+                        </button>
+                    </div>`;
+                }
+
+                return `
+                <div class="complaint-card status-${c.status.replace(' ', '-')} ${isNotice ? 'admin-notice' : ''}"
+                     style="animation-delay:${i * 0.06}s">
+
+                    <div class="card-top">
+                        <div class="card-title">
+                            ${isNotice ? '<span class="notice-tag">⚠️ Notice</span>' : ''}
+                            ${c.subject}
+                        </div>
+                        <span class="status-badge ${badgeCls}">${badgeDot} ${c.status}</span>
+                    </div>
+
+                    <div class="card-meta">
+                        <div class="meta-item">
+                            <span class="m-icon">📅</span>
+                            <div><strong>Date</strong>${dateStr}</div>
+                        </div>
+                        <div class="meta-item">
+                            <span class="m-icon">👤</span>
+                            <div><strong>Parent</strong>${c.parent_name || 'Unknown'} <span style="opacity:0.65">(${c.parent_mobile || 'N/A'})</span></div>
+                        </div>
+                        ${c.student_name
+                        ? `<div class="meta-item">
+                                    <span class="m-icon">🎓</span>
+                                    <div><strong>Student</strong>${c.student_name} <span style="opacity:0.65">(Class ${c.class}${c.section})</span></div>
+                               </div>`
+                        : ''
+                    }
+                    </div>
+
+                    <div class="card-desc">${c.description}</div>
+
+                    ${actionHtml}
+                </div>`;
+            }).join('');
+        }
+
+        async function showNewNoticeModal() {
+            try {
+                const form = document.getElementById('form-notice');
+                if (form) form.reset();
+                const students = await api('GET', '/api/admin/students');
+                const select = document.getElementById('notice-student');
+                if (select && students) {
+                    select.innerHTML = '<option value="">Select a student...</option>' +
+                        students.map(s => `<option value="${s.student_id}">${s.name} (${s.class || 'N/A'}${s.section || ''}) - ${s.student_id}</option>`).join('');
+                }
+                document.getElementById('modal-new-notice').classList.add('open');
+                
+                if (window.tsNoticeStudent) window.tsNoticeStudent.destroy();
+                window.tsNoticeStudent = new TomSelect('#notice-student', { create: false, placeholder: 'Search Student...' });
+            } catch (e) {
+                console.error(e);
+                showToast('Failed to load students: ' + e.message, 'error');
+            }
+        }
+
+        function showManageModal(c) {
+            document.getElementById('manage-cid').value = c.id;
+            document.getElementById('manage-status').value = c.status;
+            document.getElementById('manage-reply').value = c.reply || '';
+            document.getElementById('modal-manage').classList.add('open');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('open');
+        }
+
+        async function submitNotice(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.textContent = 'Issuing...';
+
+            try {
+                await api('POST', '/api/admin/complaints', {
+                    student_id: document.getElementById('notice-student').value,
+                    subject: document.getElementById('notice-subject').value,
+                    description: document.getElementById('notice-desc').value
+                });
+                closeModal('modal-new-notice');
+                showToast('Notice issued to parent/student', 'success');
+                await loadContent();
+                switchTab('admin-notices', document.getElementById('tab-notices'));
+            } catch (err) {
+                showToast('Error: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Issue Notice';
+            }
+        }
+
+        async function updateComplaint(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const id = document.getElementById('manage-cid').value;
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            try {
+                await api('PUT', `/api/admin/complaints/${id}`, {
+                    status: document.getElementById('manage-status').value,
+                    reply: document.getElementById('manage-reply').value
+                });
+                closeModal('modal-manage');
+                showToast('Complaint updated successfully', 'success');
+                await loadContent();
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save Changes';
+            }
+        }
+
+        loadContent();
+    </script>
+</body>
+
+</html>

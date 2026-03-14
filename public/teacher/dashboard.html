@@ -69,22 +69,32 @@
             if (!profile) return;
 
             document.getElementById('dash-name').textContent = profile.name;
-            document.getElementById('dash-subject').textContent = profile.subject;
+            document.getElementById('dash-subject').textContent = 'Loading assignments...';
             document.getElementById('dash-mobile').textContent = profile.mobile;
             document.getElementById('dash-avatar').textContent = profile.name[0].toUpperCase();
 
-            const classes = await api('GET', '/api/teacher/classes').catch(() => []);
+            const assignments = await api('GET', '/api/teacher/assignments').catch(() => []);
             const grid = document.getElementById('classes-grid');
-            if (!classes.length) { document.getElementById('no-classes').style.display = ''; grid.style.display = 'none'; }
-            else {
-                grid.innerHTML = classes.map(c => `
-        <div class="stat-card" style="--stat-color:var(--teal)">
-          <div class="stat-icon" style="background:rgba(13,148,136,.15)">🏫</div>
-          <div class="stat-info">
-            <div class="stat-value">Class ${c.class}${c.section}</div>
-            <div class="stat-label">${c.is_class_teacher ? '⭐ Class Teacher' : profile.subject}</div>
-          </div>
-        </div>`).join('');
+
+            // Set unique subjects
+            const uniqueSubjects = [...new Set(assignments.map(a => a.subject_name))];
+            document.getElementById('dash-subject').textContent = uniqueSubjects.length > 0 ? uniqueSubjects.join(', ') : 'None assigned';
+
+            if (!assignments.length) {
+                document.getElementById('no-classes').style.display = '';
+                grid.style.display = 'none';
+            } else {
+                grid.innerHTML = assignments.map(a => `
+        <a href="/teacher/class-dashboard.html?class_id=${a.class_id}&section=${a.section}&subject_id=${a.subject_id}" style="text-decoration:none; color:inherit;">
+            <div class="stat-card" style="--stat-color:var(--teal); cursor:pointer">
+            <div class="stat-icon" style="background:rgba(13,148,136,.15)">🏫</div>
+            <div class="stat-info">
+                <div class="stat-value" style="font-size:1.1rem">${a.class_name} - ${a.section}</div>
+                <div class="stat-label" style="font-size:1rem;font-weight:600;color:var(--teal)">📚 ${a.subject_name}</div>
+                <div class="stat-label" style="margin-top:0.4rem; font-size:0.8rem">Manage →</div>
+            </div>
+            </div>
+        </a>`).join('');
             }
             hideLoader();
         })();

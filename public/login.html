@@ -15,6 +15,9 @@
         <div class="spinner"></div>
     </div>
 
+    <!-- Theme Toggle at top right -->
+    <div style="position:absolute; top:1rem; right:1rem; z-index:100;" id="theme-toggle-container"></div>
+
     <div class="auth-card animate-up">
         <div style="text-align:center;margin-bottom:1.75rem">
             <div
@@ -25,10 +28,9 @@
         </div>
 
         <div class="role-toggle" style="flex-wrap:wrap">
-            <button class="role-btn active" id="btn-student" onclick="setRole('student')">🎒 Student</button>
-            <button class="role-btn" id="btn-parent" onclick="setRole('parent')">👨‍👩‍👧 Parent</button>
-            <button class="role-btn" id="btn-admin" onclick="setRole('admin')">🔧 Admin</button>
-            <button class="role-btn" id="btn-teacher" onclick="setRole('teacher')">👩‍🏫 Teacher</button>
+            <button class="role-btn active" id="btn-student" onclick="setRole('student')">Student</button>
+            <button class="role-btn" id="btn-parent" onclick="setRole('parent')">Parent</button>
+            <button class="role-btn" id="btn-teacher" onclick="setRole('teacher')">Teacher</button>
         </div>
 
         <form id="login-form">
@@ -63,7 +65,6 @@
             <strong>Demo Credentials:</strong><br />
             Student: <code>STU2024001</code> / <code>password123</code><br />
             Parent: <code>PAR001</code> / <code>password123</code><br />
-            Admin: <code>ADMIN001</code> / <code>admin123</code><br />
             Teacher: <code>FAC001</code> / <code>teacher123</code>
         </div>
     </div>
@@ -113,11 +114,11 @@
             currentRole = role;
             document.getElementById('btn-student').classList.toggle('active', role === 'student');
             document.getElementById('btn-parent').classList.toggle('active', role === 'parent');
-            document.getElementById('btn-admin').classList.toggle('active', role === 'admin');
-            const labels = { student: ['Student ID', 'e.g. STU2024001'], parent: ['Parent ID', 'e.g. PAR001'], admin: ['Admin ID', 'e.g. ADMIN001'] };
+            document.getElementById('btn-teacher').classList.toggle('active', role === 'teacher');
+            const labels = { student: ['Student ID', 'e.g. STU2024001'], parent: ['Parent ID', 'e.g. PAR001'], teacher: ['Teacher ID', 'e.g. FAC001'] };
             document.getElementById('id-label').textContent = labels[role][0];
             document.getElementById('user-id').placeholder = labels[role][1];
-            document.getElementById('forgot-btn').style.display = role === 'admin' ? 'none' : '';
+            document.getElementById('forgot-btn').style.display = role === 'teacher' ? 'none' : '';
             document.getElementById('signup-notice').style.display = '';
         }
 
@@ -173,12 +174,17 @@
                     id: document.getElementById('user-id').value.trim(),
                     password: document.getElementById('password').value
                 });
+
+                if (res.redirect_admin) {
+                    window.location.href = '/admin-login.html';
+                    return;
+                }
+
                 showToast(`Welcome! 👋`, 'success');
                 setTimeout(() => {
                     if (res.role === 'student') window.location.href = '/student/dashboard.html';
                     else if (res.role === 'parent') window.location.href = '/parent/dashboard.html';
                     else if (res.role === 'teacher') window.location.href = '/teacher/dashboard.html';
-                    else window.location.href = '/admin/dashboard.html';
                 }, 800);
             } catch (e) {
                 showToast(e.message, 'error');
@@ -194,10 +200,19 @@
                 if (s.role === 'student') window.location.href = '/student/dashboard.html';
                 else if (s.role === 'parent') window.location.href = '/parent/dashboard.html';
                 else if (s.role === 'teacher') window.location.href = '/teacher/dashboard.html';
-                else if (s.role === 'admin') window.location.href = '/admin/dashboard.html';
             }
             hideLoader();
         })();
+
+        // Insert theme toggle dynamically 
+        document.addEventListener('DOMContentLoaded', () => {
+            const scriptCheck = setInterval(() => {
+                if (typeof getThemeToggleHTML === 'function') {
+                    document.getElementById('theme-toggle-container').innerHTML = getThemeToggleHTML();
+                    clearInterval(scriptCheck);
+                }
+            }, 50);
+        });
     </script>
 </body>
 

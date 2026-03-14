@@ -7,6 +7,7 @@ function buildParentSidebar(activePage) {
     { href: '/parent/timetable.html', icon: '📅', label: 'Timetable', key: 'timetable' },
     { href: '/parent/calendar.html', icon: '📆', label: 'School Calendar', key: 'calendar' },
     { href: '/parent/faculty.html', icon: '👩‍🏫', label: 'Faculty Directory', key: 'faculty' },
+    { href: '/parent/complaints.html', icon: '📢', label: 'Complaints', key: 'complaints' },
     { href: '/parent/profile.html', icon: '👤', label: 'My Profile', key: 'profile' },
   ];
   return `
@@ -53,20 +54,15 @@ function buildParentTopBar(title) {
         <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
         <div class="top-bar-title">${title}</div>
       </div>
-      <div class="top-bar-date">${dateStr}</div>
+      <div style="display:flex;align-items:center;gap:1rem;">
+        ${getThemeToggleHTML()}
+        <div class="top-bar-date">${dateStr}</div>
+      </div>
     </div>
   `;
 }
 
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebar-overlay').classList.toggle('open');
-}
-
-document.getElementById('sidebar-overlay')?.addEventListener('click', () => {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('sidebar-overlay').classList.remove('open');
-});
+document.getElementById('sidebar-overlay')?.addEventListener('click', window.closeSidebar);
 
 async function initParentPage() {
   const session = await requireAuth('parent');
@@ -75,7 +71,13 @@ async function initParentPage() {
     const data = await api('GET', '/api/parent/profile');
     const avatar = document.getElementById('sidebar-avatar');
     const name = document.getElementById('sidebar-name');
-    if (avatar) avatar.textContent = (data.parent.name || 'P')[0];
+    if (avatar) {
+      if (data.student && data.student.photo_url) {
+        avatar.innerHTML = `<img src="${data.student.photo_url}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`;
+      } else {
+        avatar.textContent = (data.parent.name || 'P')[0];
+      }
+    }
     if (name) name.textContent = data.parent.name;
     return data;
   } catch (e) { console.error(e); return null; }

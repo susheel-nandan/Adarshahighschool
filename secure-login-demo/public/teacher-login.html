@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Login - Adarsha High School</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <div class="login-container">
+        <h2>Teacher Login</h2>
+        <form id="teacherLoginForm">
+            <div class="input-group">
+                <label for="teacherId">Teacher ID</label>
+                <input type="text" id="teacherId" name="teacherId" required placeholder="Enter your Teacher ID">
+            </div>
+            <div class="input-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required placeholder="Enter your Password">
+            </div>
+            <div id="errorMessage" class="error-message"></div>
+            <button type="submit" class="btn">Login</button>
+        </form>
+    </div>
+
+    <script src="/js/teacher-auth.js"></script>
+</body>
+
+</html>

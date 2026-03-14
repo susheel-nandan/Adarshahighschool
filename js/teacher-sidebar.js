@@ -1,11 +1,10 @@
 function buildTeacherSidebar(activePage) {
-    const navItems = [
-        { href: '/teacher/dashboard.html', icon: '🏠', label: 'Dashboard', key: 'dashboard' },
-        { href: '/teacher/marks.html', icon: '📝', label: 'Enter Marks', key: 'marks' },
-        { href: '/teacher/profile.html', icon: '👤', label: 'My Profile', key: 'profile' },
-    ];
+  const navItems = [
+    { href: '/teacher/dashboard.html', icon: '🏠', label: 'Dashboard', key: 'dashboard' },
+    { href: '/teacher/profile.html', icon: '👤', label: 'My Profile', key: 'profile' },
+  ];
 
-    return `
+  return `
     <aside class="sidebar" id="sidebar" style="--sidebar-accent:var(--teal)">
       <div class="sidebar-header">
         <div class="school-logo">
@@ -38,29 +37,32 @@ function buildTeacherSidebar(activePage) {
 }
 
 function buildTeacherTopBar(title) {
-    return `
+  return `
     <div class="top-bar">
       <div style="display:flex;align-items:center;gap:.75rem">
         <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
         <div class="top-bar-title">${title}</div>
       </div>
-      <div class="top-bar-date" id="topbar-date"></div>
+      <div style="display:flex;align-items:center;gap:1rem;">
+        ${getThemeToggleHTML()}
+        <div class="top-bar-date" id="topbar-date"></div>
+      </div>
     </div>`;
 }
 
 async function initTeacherPage() {
-    const session = await api('GET', '/api/auth/session');
-    if (!session.loggedIn || session.role !== 'teacher') {
-        window.location.href = '/login.html'; return;
-    }
-    const profile = await api('GET', '/api/teacher/profile').catch(() => null);
-    if (profile) {
-        document.getElementById('teacher-name').textContent = profile.name || 'Teacher';
-        const av = document.getElementById('teacher-avatar');
-        if (av) av.textContent = (profile.name || 'T')[0].toUpperCase();
-    }
-    const d = new Date();
-    const el = document.getElementById('topbar-date');
-    if (el) el.textContent = d.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
-    return profile;
+  const session = await api('GET', '/api/auth/session');
+  if (!session.loggedIn || session.role !== 'teacher') {
+    window.location.href = '/login.html'; return;
+  }
+  const profile = await api('GET', '/api/teacher/profile').catch(() => null);
+  if (profile) {
+    document.getElementById('teacher-name').textContent = profile.name || 'Teacher';
+    const av = document.getElementById('teacher-avatar');
+    if (av) av.textContent = (profile.name || 'T')[0].toUpperCase();
+  }
+  const d = new Date();
+  const el = document.getElementById('topbar-date');
+  if (el) el.textContent = d.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+  return profile;
 }

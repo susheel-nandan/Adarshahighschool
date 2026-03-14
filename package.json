@@ -18,6 +18,19 @@
         "dotenv": "^17.3.1",
         "express": "^5.2.1",
         "express-session": "^1.19.0",
+        "multer": "^2.1.1",
         "nodemailer": "^8.0.1"
-    }
+    },
+    "directories": {
+        "test": "tests"
+    },
+    "devDependencies": {},
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/susheel-nandan/Adarshahighschool.git"
+    },
+    "bugs": {
+        "url": "https://github.com/susheel-nandan/Adarshahighschool/issues"
+    },
+    "homepage": "https://github.com/susheel-nandan/Adarshahighschool#readme"
 }
